@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/BlackBeltTechnology/osgi-encryption.svg?branch=develop)][travis]
+![Build Status](https://travis-ci.org/BlackBeltTechnology/osgi-encryption.svg?branch=develop)
 
 # OSGi encryption
 
