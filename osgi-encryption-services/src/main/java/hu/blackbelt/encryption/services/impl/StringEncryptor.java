@@ -25,7 +25,7 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-@Component(immediate = true, configurationPolicy = ConfigurationPolicy.REQUIRE, service = Encryptor.class)
+@Component(immediate = true, configurationPolicy = ConfigurationPolicy.REQUIRE)
 @Designate(ocd = StringEncryptor.Config.class)
 @Slf4j
 public class StringEncryptor implements Encryptor {
