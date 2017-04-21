@@ -6,12 +6,19 @@ package hu.blackbelt.encryption.services;
 public interface Encryptor {
 
     /**
+     * Return alias of encryptor.
+     *
+     * @return alias
+     */
+    String getAlias();
+
+    /**
      * Encrypt the input message
      *
-     * @param message the message to be encrypted
+     * @param data the message to be encrypted
      * @return the result of encryption
      */
-    String encrypt(String message);
+    String encrypt(String data);
 
 
     /**

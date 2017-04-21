@@ -4,6 +4,7 @@ import hu.blackbelt.encryption.services.Encryptor;
 import lombok.extern.slf4j.Slf4j;
 import org.jasypt.encryption.pbe.StandardPBEStringEncryptor;
 import org.jasypt.encryption.pbe.config.EnvironmentStringPBEConfig;
+import org.jasypt.encryption.pbe.config.SimplePBEConfig;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
 import org.osgi.framework.ServiceRegistration;
@@ -14,23 +15,36 @@ import org.osgi.service.metatype.annotations.Designate;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Dictionary;
 import java.util.Hashtable;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 @Component(immediate = true, configurationPolicy = ConfigurationPolicy.REQUIRE, service = Encryptor.class)
 @Designate(ocd = StringEncryptor.Config.class)
 @Slf4j
-public class StringEncryptor implements Encryptor, org.jasypt.encryption.StringEncryptor {
+public class StringEncryptor implements Encryptor {
+
+    private AtomicLong encryptionTime = new AtomicLong();
+    private AtomicLong decyptionTime = new AtomicLong();
+
+    private AtomicInteger encryptionErrors = new AtomicInteger();
+    private AtomicInteger decryptionErrors = new AtomicInteger();
+
+    private AtomicInteger encryptionCount = new AtomicInteger();
+    private AtomicInteger decryptionCount = new AtomicInteger();
 
     @SuppressWarnings("checkstyle:JavadocMethod")
     @ObjectClassDefinition(name = "String encryptor configuration")
     public @interface Config {
 
-        @AttributeDefinition(required = false, name = "Encryption algorithm")
-        String encryption_algorithm() default DEFAULT_ENCRYPTION_ALGORITHM;
+        @AttributeDefinition(name = "Encryption algorithm")
+        String encryption_algorithm();
 
         @AttributeDefinition(required = false, name = "Password for encryption", type = AttributeType.PASSWORD)
         String encryption_password();
@@ -38,25 +52,27 @@ public class StringEncryptor implements Encryptor, org.jasypt.encryption.StringE
         @AttributeDefinition(required = false, name = "Password file for encryption")
         String encryption_passwordFile();
 
-        @AttributeDefinition(required = false, name = "Environment variable holding encryption algorithm")
-        String encryption_passwordEnvName() default DEFAULT_ENCRYPTION_PASSWORD_ENV_NAME;
+        @AttributeDefinition(required = false, name = "Environment variable holding password for encryption")
+        String encryption_passwordEnvName();
+
+        @AttributeDefinition(required = false, name = "JVM argument holding password for encryption")
+        String encryption_passwordSysPropertyName();
 
         @AttributeDefinition(required = false, name = "Alias for encryptor")
         String encryptor_alias();
     }
 
-    /**
-     * Algorithm of default StringEncryptor.
-     */
-    public static final String DEFAULT_ENCRYPTION_ALGORITHM = "PBEWithSHA1AndDESEDE";
+    private String alias;
+    private String passwordFile;
+    private String passwordEnvName;
+    private String passwordSysPropertyName;
 
     /**
-     * Environment variable of password for default StringEncryptor.
+     * OSGi service registration of Jasypt service (PAX-JDBC uses that service interface).
      */
-    public static final String DEFAULT_ENCRYPTION_PASSWORD_ENV_NAME = "ENCRYPTION_PASSWORD";
-
     private ServiceRegistration<org.jasypt.encryption.StringEncryptor> defaultStringEncryptor;
 
+    private EnvironmentStringPBEConfig encryptorConfig;
     private StandardPBEStringEncryptor encryptor;
 
     /**
@@ -68,24 +84,21 @@ public class StringEncryptor implements Encryptor, org.jasypt.encryption.StringE
     @Activate
     public void start(final BundleContext context, final Config config) {
         encryptor = new StandardPBEStringEncryptor();
-        final EnvironmentStringPBEConfig encryptorConfig = new EnvironmentStringPBEConfig();
-        encryptorConfig.setAlgorithm(config.encryption_algorithm());
-        if (config.encryption_password() != null) {
-            encryptorConfig.setPassword(config.encryption_password());
-        } else if (config.encryption_passwordFile() != null) {
-            encryptorConfig.setPassword(loadPassword(config.encryption_passwordFile()));
-        } else if (config.encryption_passwordEnvName() != null) {
-            encryptorConfig.setPasswordEnvName(config.encryption_passwordEnvName());
-        }
-        encryptor.setConfig(encryptorConfig);
+        encryptor.setConfig(refreshConfig(config));
 
-        final Dictionary<String, Object> dict = new Hashtable<>();
-        dict.put(Constants.SERVICE_RANKING, Integer.MAX_VALUE);
-        dict.put("algorithm", config.encryption_algorithm());
-        if (config.encryptor_alias() != null) {
-            dict.put("alias", config.encryptor_alias());
-        }
-        defaultStringEncryptor = context.registerService(org.jasypt.encryption.StringEncryptor.class, encryptor, dict);
+        defaultStringEncryptor = context.registerService(org.jasypt.encryption.StringEncryptor.class, encryptor, getJasyptServiceProps(config.encryptor_alias(), config.encryption_algorithm()));
+    }
+
+    /**
+     * Update StringEncryptor configuration.
+     *
+     * @param config configuration options
+     */
+    @Modified
+    public void update(final Config config) {
+        refreshConfig(config);
+
+        defaultStringEncryptor.setProperties(getJasyptServiceProps(config.encryptor_alias(), config.encryption_algorithm()));
     }
 
     /**
@@ -94,6 +107,7 @@ public class StringEncryptor implements Encryptor, org.jasypt.encryption.StringE
     @Deactivate
     public void stop() {
         encryptor = null;
+        encryptorConfig = null;
         try {
             if (defaultStringEncryptor != null) {
                 defaultStringEncryptor.unregister();
@@ -103,28 +117,113 @@ public class StringEncryptor implements Encryptor, org.jasypt.encryption.StringE
         }
     }
 
+    private SimplePBEConfig refreshConfig(final Config config) {
+        alias = config.encryptor_alias();
+        if (alias == null) {
+            log.warn("Alias is not configured for Encryptor component.");
+        }
+
+        passwordFile = config.encryption_passwordFile();
+        passwordEnvName = config.encryption_passwordEnvName();
+        passwordSysPropertyName = config.encryption_passwordSysPropertyName();
+
+        encryptorConfig = new EnvironmentStringPBEConfig();
+        encryptorConfig.setAlgorithm(config.encryption_algorithm());
+        if (config.encryption_password() != null) {
+            encryptorConfig.setPassword(config.encryption_password());
+        }
+
+        return encryptorConfig;
+    }
+
+    private Dictionary<String, Object> getJasyptServiceProps(final String alias, final String algorithm) {
+        final Dictionary<String, Object> dict = new Hashtable<>();
+        dict.put(Constants.SERVICE_RANKING, Integer.MAX_VALUE);
+        dict.put("algorithm", algorithm);
+        if (alias != null) {
+            dict.put("alias", alias);
+        }
+
+        return dict;
+    }
+
+    @Override
+    public String getAlias() {
+        return alias;
+    }
+
     @Override
     public String encrypt(final String message) {
-        return encryptor.encrypt(message);
+        final long startTs = System.currentTimeMillis();
+
+        Objects.requireNonNull(encryptor, "Encryptor is not initialized yet");
+        Objects.requireNonNull(encryptorConfig, "Missing encryptor configuration");
+
+        try {
+            loadPassword();
+            return encryptor.encrypt(message);
+        } catch (RuntimeException ex) {
+            encryptionErrors.incrementAndGet();
+            throw ex;
+        } finally {
+            cleanPassword();
+
+            final Long endTs = System.currentTimeMillis();
+            encryptionTime.addAndGet(endTs - startTs);
+            encryptionCount.incrementAndGet();
+        }
     }
 
     @Override
     public String decrypt(final String encryptedMessage) {
-        return encryptor.decrypt(encryptedMessage);
+        final long startTs = System.currentTimeMillis();
+
+        Objects.requireNonNull(encryptor, "Encryptor is not initialized yet");
+        Objects.requireNonNull(encryptorConfig, "Missing encryptor configuration");
+
+        try {
+            loadPassword();
+            return encryptor.decrypt(encryptedMessage);
+        } catch (RuntimeException ex) {
+            decryptionErrors.incrementAndGet();
+            throw ex;
+        } finally {
+            cleanPassword();
+
+            final Long endTs = System.currentTimeMillis();
+            decyptionTime.addAndGet(endTs - startTs);
+            decryptionCount.incrementAndGet();
+        }
+    }
+
+    private void loadPassword() {
+        if (passwordFile != null) {
+            encryptorConfig.setPasswordCharArray(loadPasswordFromFile(passwordFile));
+        } else if (passwordEnvName != null) {
+            encryptorConfig.setPasswordEnvName(passwordEnvName);
+        } else if (passwordSysPropertyName != null) {
+            encryptorConfig.setPasswordSysPropertyName(passwordSysPropertyName);
+        }
+    }
+
+    private void cleanPassword() {
+        if (passwordFile != null ||passwordEnvName != null || passwordSysPropertyName != null) {
+            encryptorConfig.cleanPassword();
+        }
     }
 
     /**
      * Load password from file.
      *
-     * @param file file that contains password, using default charset of platform
+     * @param path file that contains password, using default charset of platform
      * @return plain text password
      */
-    private static String loadPassword(final String file) {
+    private static char[] loadPasswordFromFile(final String path) {
         try {
-            byte[] encoded = Files.readAllBytes(Paths.get(file));
-            return new String(encoded, Charset.defaultCharset());
+            final byte[] encoded = Files.readAllBytes(Paths.get(path));
+            return Charset.forName("UTF-8").decode(ByteBuffer.wrap(encoded)).array();
         } catch (IOException ex) {
-            throw new IllegalArgumentException("Unable to read password from file: " + file, ex);
+            throw new IllegalArgumentException("Unable to read password from file: " + path, ex);
         }
     }
 }
