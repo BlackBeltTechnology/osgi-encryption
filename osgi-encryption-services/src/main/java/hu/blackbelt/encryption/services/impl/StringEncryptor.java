@@ -4,7 +4,6 @@ import hu.blackbelt.encryption.services.Encryptor;
 import lombok.extern.slf4j.Slf4j;
 import org.jasypt.encryption.pbe.StandardPBEStringEncryptor;
 import org.jasypt.encryption.pbe.config.EnvironmentStringPBEConfig;
-import org.jasypt.encryption.pbe.config.SimplePBEConfig;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
 import org.osgi.framework.ServiceRegistration;
@@ -21,14 +20,13 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Dictionary;
 import java.util.Hashtable;
-import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-@Component(immediate = true, configurationPolicy = ConfigurationPolicy.REQUIRE)
+@Component(immediate = true, service = Encryptor.class, configurationPolicy = ConfigurationPolicy.REQUIRE)
 @Designate(ocd = StringEncryptor.Config.class)
 @Slf4j
-public class StringEncryptor implements Encryptor {
+public class StringEncryptor implements Encryptor, org.jasypt.encryption.StringEncryptor {
 
     private AtomicLong encryptionTime = new AtomicLong();
     private AtomicLong decyptionTime = new AtomicLong();
@@ -63,6 +61,9 @@ public class StringEncryptor implements Encryptor {
     }
 
     private String alias;
+    private String algorithm;
+
+    private char[] password;
     private String passwordFile;
     private String passwordEnvName;
     private String passwordSysPropertyName;
@@ -72,9 +73,6 @@ public class StringEncryptor implements Encryptor {
      */
     private ServiceRegistration<org.jasypt.encryption.StringEncryptor> defaultStringEncryptor;
 
-    private EnvironmentStringPBEConfig encryptorConfig;
-    private StandardPBEStringEncryptor encryptor;
-
     /**
      * Register StringEncryptor service instance.
      *
@@ -83,10 +81,8 @@ public class StringEncryptor implements Encryptor {
      */
     @Activate
     public void start(final BundleContext context, final Config config) {
-        encryptor = new StandardPBEStringEncryptor();
-        encryptor.setConfig(refreshConfig(config));
-
-        defaultStringEncryptor = context.registerService(org.jasypt.encryption.StringEncryptor.class, encryptor, getJasyptServiceProps(config.encryptor_alias(), config.encryption_algorithm()));
+        refreshConfig(config);
+        defaultStringEncryptor = context.registerService(org.jasypt.encryption.StringEncryptor.class, this, getJasyptServiceProps(config.encryptor_alias(), config.encryption_algorithm()));
     }
 
     /**
@@ -97,7 +93,6 @@ public class StringEncryptor implements Encryptor {
     @Modified
     public void update(final Config config) {
         refreshConfig(config);
-
         defaultStringEncryptor.setProperties(getJasyptServiceProps(config.encryptor_alias(), config.encryption_algorithm()));
     }
 
@@ -106,8 +101,6 @@ public class StringEncryptor implements Encryptor {
      */
     @Deactivate
     public void stop() {
-        encryptor = null;
-        encryptorConfig = null;
         try {
             if (defaultStringEncryptor != null) {
                 defaultStringEncryptor.unregister();
@@ -117,23 +110,18 @@ public class StringEncryptor implements Encryptor {
         }
     }
 
-    private SimplePBEConfig refreshConfig(final Config config) {
+    private void refreshConfig(final Config config) {
         alias = config.encryptor_alias();
         if (alias == null) {
-            log.warn("Alias is not configured for Encryptor component.");
+            log.warn("Alias is not configured for Encryptor component, cannot used for decrypting configuration parameters.");
         }
 
+        password = config.encryption_password() != null ? config.encryption_password().toCharArray() : null;
         passwordFile = config.encryption_passwordFile();
         passwordEnvName = config.encryption_passwordEnvName();
         passwordSysPropertyName = config.encryption_passwordSysPropertyName();
 
-        encryptorConfig = new EnvironmentStringPBEConfig();
-        encryptorConfig.setAlgorithm(config.encryption_algorithm());
-        if (config.encryption_password() != null) {
-            encryptorConfig.setPassword(config.encryption_password());
-        }
-
-        return encryptorConfig;
+        algorithm = config.encryption_algorithm();
     }
 
     private Dictionary<String, Object> getJasyptServiceProps(final String alias, final String algorithm) {
@@ -152,22 +140,35 @@ public class StringEncryptor implements Encryptor {
         return alias;
     }
 
+    private org.jasypt.encryption.StringEncryptor getEncryptor() {
+        final EnvironmentStringPBEConfig encryptorConfig = new EnvironmentStringPBEConfig();
+        encryptorConfig.setAlgorithm(algorithm);
+
+        if (password != null) {
+            encryptorConfig.setPasswordCharArray(password);
+        } else if (passwordFile != null) {
+            encryptorConfig.setPasswordCharArray(loadPasswordFromFile(passwordFile));
+        } else if (passwordEnvName != null) {
+            encryptorConfig.setPasswordEnvName(passwordEnvName);
+        } else if (passwordSysPropertyName != null) {
+            encryptorConfig.setPasswordSysPropertyName(passwordSysPropertyName);
+        }
+
+        final StandardPBEStringEncryptor encryptor = new StandardPBEStringEncryptor();
+        encryptor.setConfig(encryptorConfig);
+        return encryptor;
+    }
+
     @Override
     public String encrypt(final String message) {
         final long startTs = System.currentTimeMillis();
 
-        Objects.requireNonNull(encryptor, "Encryptor is not initialized yet");
-        Objects.requireNonNull(encryptorConfig, "Missing encryptor configuration");
-
         try {
-            loadPassword();
-            return encryptor.encrypt(message);
+            return getEncryptor().encrypt(message);
         } catch (RuntimeException ex) {
             encryptionErrors.incrementAndGet();
             throw ex;
         } finally {
-            cleanPassword();
-
             final Long endTs = System.currentTimeMillis();
             encryptionTime.addAndGet(endTs - startTs);
             encryptionCount.incrementAndGet();
@@ -178,37 +179,15 @@ public class StringEncryptor implements Encryptor {
     public String decrypt(final String encryptedMessage) {
         final long startTs = System.currentTimeMillis();
 
-        Objects.requireNonNull(encryptor, "Encryptor is not initialized yet");
-        Objects.requireNonNull(encryptorConfig, "Missing encryptor configuration");
-
         try {
-            loadPassword();
-            return encryptor.decrypt(encryptedMessage);
+            return getEncryptor().decrypt(encryptedMessage);
         } catch (RuntimeException ex) {
             decryptionErrors.incrementAndGet();
             throw ex;
         } finally {
-            cleanPassword();
-
             final Long endTs = System.currentTimeMillis();
             decyptionTime.addAndGet(endTs - startTs);
             decryptionCount.incrementAndGet();
-        }
-    }
-
-    private void loadPassword() {
-        if (passwordFile != null) {
-            encryptorConfig.setPasswordCharArray(loadPasswordFromFile(passwordFile));
-        } else if (passwordEnvName != null) {
-            encryptorConfig.setPasswordEnvName(passwordEnvName);
-        } else if (passwordSysPropertyName != null) {
-            encryptorConfig.setPasswordSysPropertyName(passwordSysPropertyName);
-        }
-    }
-
-    private void cleanPassword() {
-        if (passwordFile != null ||passwordEnvName != null || passwordSysPropertyName != null) {
-            encryptorConfig.cleanPassword();
         }
     }
 
