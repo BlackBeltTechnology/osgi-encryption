@@ -4,11 +4,13 @@ import hu.blackbelt.encryption.services.Encryptor;
 import lombok.extern.slf4j.Slf4j;
 import org.osgi.service.component.annotations.*;
 
-import java.util.Collection;
 import java.util.Map;
 import java.util.TreeMap;
 
-@Component(immediate = true, service = ConfigTest.class)
+@Component(immediate = true, service = ConfigTest.class, reference = {
+        @Reference(name = "defaultEncryptor", service = Encryptor.class, bind = "setEncryptor", updated = "updateEncryptor", unbind = "unsetEncryptor", policyOption = ReferencePolicyOption.GREEDY, policy = ReferencePolicy.DYNAMIC, target = "(encryptor.alias=default)", fieldOption = FieldOption.UPDATE),
+        @Reference(name = "testEncryptor", service = Encryptor.class, bind = "setEncryptor", updated = "updateEncryptor", unbind = "unsetEncryptor", policyOption = ReferencePolicyOption.GREEDY, policy = ReferencePolicy.DYNAMIC, target = "(encryptor.alias=test)", fieldOption = FieldOption.UPDATE)
+})
 @Slf4j
 public class ConfigTest {
 
@@ -17,21 +19,29 @@ public class ConfigTest {
 
     private Map<String, Object> originalProperties = new TreeMap<>();
 
-    @Reference(name = "defaultEncryptor", bind = "setEncryptor", updated = "setEncryptor", unbind = "unsetEncryptor", policyOption = ReferencePolicyOption.GREEDY, cardinality = ReferenceCardinality.AT_LEAST_ONE, policy = ReferencePolicy.DYNAMIC, target = "(encryptor.alias=default)", fieldOption = FieldOption.UPDATE)
-    private volatile Collection<Encryptor> defaultEncryptor = null;
-
-    @Reference(name = "testEncryptor", bind = "setEncryptor", updated = "setEncryptor", unbind = "unsetEncryptor", policyOption = ReferencePolicyOption.GREEDY, cardinality = ReferenceCardinality.AT_LEAST_ONE, policy = ReferencePolicy.DYNAMIC, target = "(encryptor.alias=test)", fieldOption = FieldOption.UPDATE)
-    private volatile Collection<Encryptor> testEncryptor = null;
-
-
     @Activate
     void start(final Map<String, Object> props) {
+        log.info("STARTING ConfigTest");
+
         originalProperties.putAll(props);
 
         updateConfig();
     }
 
+    @Modified
+    void update(final Map<String, Object> props) {
+        log.info("UPDATING ConfigTest");
+
+        originalProperties.clear();
+        originalProperties.putAll(props);
+
+        updateConfig();
+    }
+
+    @Deactivate
     void stop() {
+        log.info("STOPPING ConfigTest");
+
         originalProperties.clear();
     }
 
@@ -52,11 +62,15 @@ public class ConfigTest {
     }
 
     void setEncryptor(final Encryptor encryptor, final Map<String, Object> props) {
-        log.info("BIND/UPDATE default encryptor");
+        log.info("BIND encryptor: " + encryptor.getAlias());
+    }
+
+    void updateEncryptor(final Encryptor encryptor, final Map<String, Object> props) {
+        log.info("UPDATE encryptor: " + encryptor.getAlias());
         updateConfig();
     }
 
     void unsetEncryptor(final Encryptor encryptor) {
-        log.info("UNBIND default encryptor");
+        log.info("UNBIND encryptor: " + encryptor.getAlias());
     }
 }
