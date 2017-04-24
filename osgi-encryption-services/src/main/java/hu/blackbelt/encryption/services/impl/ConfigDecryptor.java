@@ -1,10 +1,12 @@
 package hu.blackbelt.encryption.services.impl;
 
-import hu.blackbelt.encryption.services.Encryptor;
 import lombok.extern.slf4j.Slf4j;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.InvalidSyntaxException;
+import org.osgi.framework.ServiceReference;
 import org.osgi.service.component.annotations.*;
 
-import java.util.*;
+import java.util.Collection;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -13,20 +15,18 @@ import java.util.regex.Pattern;
 public class ConfigDecryptor implements hu.blackbelt.encryption.services.ConfigDecryptor {
 
     private static final String FN_NAME = "ENC";
-    private static final Pattern PATTERN_WITHOUT_ALIAS = Pattern.compile("^" + FN_NAME + "\\((.*)\\)$");
+    private static final Pattern PATTERN = Pattern.compile("^" + FN_NAME + "\\((.*)\\)$");
     private static final Pattern PATTERN_WITH_ALIAS = Pattern.compile("^" + FN_NAME + "\\((.*)\\s*,\\s*(.*)\\)$");
 
-    private static final String DEFAULT_ENCRYPTOR_ALIAS = "default";
+    private BundleContext context;
 
-    private Map<String, Encryptor> encryptors = new HashMap<>();
-
-    @Reference(policyOption = ReferencePolicyOption.GREEDY, unbind = "unregisterEncryptor", cardinality = ReferenceCardinality.AT_LEAST_ONE)
-    void registerEncryptor(final Encryptor encryptor) {
-        encryptors.put(encryptor.getAlias(), encryptor);
+    @Activate
+    void start(final BundleContext context) {
+        this.context = context;
     }
 
-    void unregisterEncryptor(final Encryptor encryptor) {
-        encryptors.remove(encryptor.getAlias());
+    void stop() {
+        context = null;
     }
 
     @Override
@@ -38,27 +38,35 @@ public class ConfigDecryptor implements hu.blackbelt.encryption.services.ConfigD
             encrypted = mWithAias.group(1);
             alias = mWithAias.group(2);
         } else {
-            final Matcher mWithoutAias = PATTERN_WITHOUT_ALIAS.matcher(encryptedMessage);
+            final Matcher mWithoutAias = PATTERN.matcher(encryptedMessage);
             if (mWithoutAias.matches()) {
                 encrypted = mWithoutAias.group(1);
-                alias = DEFAULT_ENCRYPTOR_ALIAS;
+                alias = null;
             } else {
                 throw new IllegalArgumentException("Invalid encrypted message format");
             }
         }
 
-        final Encryptor enc = encryptors.get(alias);
-        if (enc == null) {
-            log.warn("Registered encryptor instances: " + encryptors.keySet());
-            throw new IllegalStateException("Encryptor with alias '" + alias + "' not found");
-        }
-        final String decrypted = enc.decrypt(encrypted);
+        try {
+            final String filter = alias != null ? "(encryptor.alias=" + alias + ")" : null;
+            final Collection<ServiceReference<hu.blackbelt.encryption.services.Encryptor>> srs = context.getServiceReferences(hu.blackbelt.encryption.services.Encryptor.class, filter);
+            if (srs.isEmpty()) {
+                throw new IllegalStateException("Encryptor with alias '" + alias + "' not found");
+            }
+            final hu.blackbelt.encryption.services.Encryptor encryptor = context.getService(srs.iterator().next());
 
-        return decrypted;
+            if (srs.size() > 1) {
+                log.warn("More than 1 encryptors found for alias: " + alias + ", decryption is nondeterministic (used alias: " + encryptor.getAlias() + ")");
+            }
+
+            return encryptor.decrypt(encrypted);
+        } catch (InvalidSyntaxException ex) {
+            throw new IllegalStateException("Invalid encryptor alias: " + alias, ex);
+        }
     }
 
     @Override
     public boolean isEncrypted(final String value) {
-        return value != null ? PATTERN_WITHOUT_ALIAS.matcher(value).matches() : false;
+        return value != null ? PATTERN.matcher(value).matches() : false;
     }
 }
