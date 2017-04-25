@@ -9,8 +9,7 @@ import java.util.Map;
 import java.util.TreeMap;
 
 @Component(immediate = true, service = ConfigTest.class, reference = {
-        @Reference(name = "defaultEncryptor", service = Encryptor.class, bind = "setEncryptor", updated = "updateEncryptor", unbind = "unsetEncryptor", policyOption = ReferencePolicyOption.GREEDY, policy = ReferencePolicy.DYNAMIC, target = "(encryptor.alias=default)"),
-        @Reference(name = "testEncryptor", service = Encryptor.class, bind = "setEncryptor", updated = "updateEncryptor", unbind = "unsetEncryptor", policyOption = ReferencePolicyOption.GREEDY, policy = ReferencePolicy.DYNAMIC, target = "(encryptor.alias=test)")
+        @Reference(name = "encryptor", service = Encryptor.class, bind = "setEncryptor", updated = "updateEncryptor", unbind = "unsetEncryptor", cardinality = ReferenceCardinality.AT_LEAST_ONE, policyOption = ReferencePolicyOption.GREEDY, policy = ReferencePolicy.DYNAMIC)
 })
 @Slf4j
 public class ConfigTest {
