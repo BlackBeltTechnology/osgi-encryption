@@ -1,6 +1,7 @@
 package hu.blackbelt.encryption.services.impl;
 
 import hu.blackbelt.encryption.services.Encryptor;
+import hu.blackbelt.encryption.services.internal.FileWatcher;
 import lombok.extern.slf4j.Slf4j;
 import org.jasypt.encryption.pbe.StandardPBEStringEncryptor;
 import org.jasypt.encryption.pbe.config.EnvironmentStringPBEConfig;
@@ -17,6 +18,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Dictionary;
 import java.util.Hashtable;
@@ -58,6 +60,9 @@ public class StringEncryptor implements Encryptor, org.jasypt.encryption.StringE
 
         @AttributeDefinition(required = false, name = "Alias for encryptor")
         String encryptor_alias();
+
+        @AttributeDefinition(required = false, name = "Enable password file watcher", description = "Enable password file watcher and trigger configuration reload on change", type = AttributeType.BOOLEAN)
+        boolean encryptor_enablePasswordFileWatcher() default DEFAULT_ENABLE_PASSWORD_FILE_WATCHER;
     }
 
     private String alias;
@@ -67,6 +72,11 @@ public class StringEncryptor implements Encryptor, org.jasypt.encryption.StringE
     private String passwordFile;
     private String passwordEnvName;
     private String passwordSysPropertyName;
+
+    private FileWatcher fileWatcher;
+
+    public static final boolean DEFAULT_ENABLE_PASSWORD_FILE_WATCHER = true;
+    private volatile boolean enablePasswordFileWatcher;
 
     /**
      * OSGi service registration of Jasypt service (PAX-JDBC uses that service interface).
@@ -105,8 +115,13 @@ public class StringEncryptor implements Encryptor, org.jasypt.encryption.StringE
             if (defaultStringEncryptor != null) {
                 defaultStringEncryptor.unregister();
             }
+
+            if (fileWatcher != null) {
+                fileWatcher.stop();
+            }
         } finally {
             defaultStringEncryptor = null;
+            fileWatcher = null;
         }
     }
 
@@ -114,6 +129,14 @@ public class StringEncryptor implements Encryptor, org.jasypt.encryption.StringE
         alias = config.encryptor_alias();
         if (alias == null) {
             log.warn("Alias is not configured for Encryptor component, cannot used for decrypting configuration parameters.");
+        }
+
+        enablePasswordFileWatcher = config.encryptor_enablePasswordFileWatcher();
+        synchronized (this) {
+            if (fileWatcher != null && !enablePasswordFileWatcher) {
+                fileWatcher.stop();
+                fileWatcher = null;
+            }
         }
 
         password = config.encryption_password() != null ? config.encryption_password().toCharArray() : null;
@@ -148,6 +171,15 @@ public class StringEncryptor implements Encryptor, org.jasypt.encryption.StringE
             encryptorConfig.setPasswordCharArray(password);
         } else if (passwordFile != null) {
             encryptorConfig.setPasswordCharArray(loadPasswordFromFile(passwordFile));
+            if (enablePasswordFileWatcher) {
+                synchronized (this) {
+                    if (fileWatcher == null) {
+                        fileWatcher = new PasswordFileWatcher(passwordFile);
+                        final Thread thread = new Thread(fileWatcher, passwordFile + " watcher");
+                        thread.start();
+                    }
+                }
+            }
         } else if (passwordEnvName != null) {
             encryptorConfig.setPasswordEnvName(passwordEnvName);
         } else if (passwordSysPropertyName != null) {
@@ -157,6 +189,10 @@ public class StringEncryptor implements Encryptor, org.jasypt.encryption.StringE
         final StandardPBEStringEncryptor encryptor = new StandardPBEStringEncryptor();
         encryptor.setConfig(encryptorConfig);
         return encryptor;
+    }
+
+    private void passwordFileContentChanged() {
+        log.debug("Password file updated for StringEncryptor '" + alias + "'");
     }
 
     @Override
@@ -203,6 +239,31 @@ public class StringEncryptor implements Encryptor, org.jasypt.encryption.StringE
             return Charset.forName("UTF-8").decode(ByteBuffer.wrap(encoded)).array();
         } catch (IOException ex) {
             throw new IllegalArgumentException("Unable to read password from file: " + path, ex);
+        }
+    }
+
+    private class PasswordFileWatcher extends FileWatcher {
+
+        PasswordFileWatcher(final String path) {
+            super(path);
+        }
+
+        @Override
+        protected void onCreate(final Path path) {
+            super.onCreate(path);
+            passwordFileContentChanged();
+        }
+
+        @Override
+        protected void onModify(Path path) {
+            super.onModify(path);
+            passwordFileContentChanged();
+        }
+
+        @Override
+        protected void onDelete(Path path) {
+            super.onDelete(path);
+            passwordFileContentChanged();
         }
     }
 }

@@ -63,7 +63,7 @@ public class ConfigDecryptor implements hu.blackbelt.encryption.services.ConfigD
         } catch (InvalidSyntaxException ex) {
             throw new IllegalStateException("Invalid encryptor alias: " + alias, ex);
         } catch (RuntimeException ex) {
-            log.error("Unable to decrypt data, alias = " + alias);
+            log.error("Unable to decrypt data, alias = " + alias, ex);
 
             // return original value
             return encryptedMessage;
