@@ -5,9 +5,12 @@ import hu.blackbelt.encryption.services.internal.FileWatcher;
 import lombok.extern.slf4j.Slf4j;
 import org.jasypt.encryption.pbe.StandardPBEStringEncryptor;
 import org.jasypt.encryption.pbe.config.EnvironmentStringPBEConfig;
-import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
+import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
+import org.osgi.service.cm.Configuration;
+import org.osgi.service.cm.ConfigurationAdmin;
+import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.*;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.AttributeType;
@@ -75,6 +78,11 @@ public class StringEncryptor implements Encryptor, org.jasypt.encryption.StringE
 
     private FileWatcher fileWatcher;
 
+    private ComponentContext cc;
+
+    @Reference(policyOption = ReferencePolicyOption.GREEDY)
+    private ConfigurationAdmin configAdmin;
+
     public static final boolean DEFAULT_ENABLE_PASSWORD_FILE_WATCHER = true;
     private volatile boolean enablePasswordFileWatcher;
 
@@ -86,13 +94,14 @@ public class StringEncryptor implements Encryptor, org.jasypt.encryption.StringE
     /**
      * Register StringEncryptor service instance.
      *
-     * @param context bundle context
-     * @param config  configuration options
+     * @param cc     bundle context
+     * @param config configuration options
      */
     @Activate
-    public void start(final BundleContext context, final Config config) {
+    public void start(final ComponentContext cc, final Config config) {
+        this.cc = cc;
         refreshConfig(config);
-        defaultStringEncryptor = context.registerService(org.jasypt.encryption.StringEncryptor.class, this, getJasyptServiceProps(config.encryptor_alias(), config.encryption_algorithm()));
+        defaultStringEncryptor = cc.getBundleContext().registerService(org.jasypt.encryption.StringEncryptor.class, this, getJasyptServiceProps(config.encryptor_alias(), config.encryption_algorithm()));
     }
 
     /**
@@ -192,7 +201,25 @@ public class StringEncryptor implements Encryptor, org.jasypt.encryption.StringE
     }
 
     private void passwordFileContentChanged() {
-        log.debug("Password file updated for StringEncryptor '" + alias + "'");
+        if (log.isDebugEnabled()) {
+            log.debug("Password file updated for StringEncryptor '" + alias + "'");
+        }
+
+        final ServiceReference<Encryptor> sr = (ServiceReference<Encryptor>) cc.getServiceReference();
+        if (sr != null) {
+            final String pid = (String) sr.getProperty(Constants.SERVICE_PID);
+            try {
+                final Configuration config = configAdmin.getConfiguration(pid);
+                final Dictionary dict = config.getProperties();
+                dict.put("lastModified", System.currentTimeMillis());
+                config.update(dict);
+                if (log.isTraceEnabled()) {
+                    log.trace("Updated configuration for PID: " + pid);
+                }
+            } catch (IOException ex) {
+                log.error("Unable to get configuration", ex);
+            }
+        }
     }
 
     @Override
