@@ -59,6 +59,8 @@ public class StringDigester implements Digester, org.jasypt.digest.StringDigeste
     private ServiceRegistration<OperationStats> digestStatsReg;
     private ServiceRegistration<OperationStats> digestValidationStatsReg;
 
+    private transient org.jasypt.digest.StringDigester digester;
+
     /**
      * Register StringDigester service instance.
      *
@@ -79,8 +81,6 @@ public class StringDigester implements Digester, org.jasypt.digest.StringDigeste
 
         refreshConfig(config);
         defaultStringDigester = cc.getBundleContext().registerService(org.jasypt.digest.StringDigester.class, this, getJasyptServiceProps(config.digester_alias(), config.digest_algorithm()));
-
-        log.info("digest = " + digest("teszt"));
     }
 
     /**
@@ -91,8 +91,8 @@ public class StringDigester implements Digester, org.jasypt.digest.StringDigeste
     @Modified
     void update(final StringDigester.Config config) {
         refreshConfig(config);
-        log.info("digest = " + digest("teszt"));
         defaultStringDigester.setProperties(getJasyptServiceProps(config.digester_alias(), config.digest_algorithm()));
+        digester = null;
     }
 
     /**
@@ -116,6 +116,7 @@ public class StringDigester implements Digester, org.jasypt.digest.StringDigeste
             defaultStringDigester = null;
             digestStatsReg = null;
             digestValidationStatsReg = null;
+            digester = null;
         }
     }
 
@@ -148,20 +149,24 @@ public class StringDigester implements Digester, org.jasypt.digest.StringDigeste
     }
 
     private org.jasypt.digest.StringDigester getDigester() {
-        final StandardStringDigester digester = new StandardStringDigester();
-        final EnvironmentStringDigesterConfig digesterConfig = new EnvironmentStringDigesterConfig();
-        digesterConfig.setAlgorithm(algorithm);
-        if (outputType != null) {
-            digesterConfig.setStringOutputType(outputType);
-        }
-        if (iterations > 0) {
-            digesterConfig.setIterations(iterations);
-        }
-        if (saltSize >= 0) {
-            digesterConfig.setSaltSizeBytes(saltSize);
+        if (digester == null) {
+            final StandardStringDigester digester = new StandardStringDigester();
+            final EnvironmentStringDigesterConfig digesterConfig = new EnvironmentStringDigesterConfig();
+            digesterConfig.setAlgorithm(algorithm);
+            if (outputType != null) {
+                digesterConfig.setStringOutputType(outputType);
+            }
+            if (iterations > 0) {
+                digesterConfig.setIterations(iterations);
+            }
+            if (saltSize >= 0) {
+                digesterConfig.setSaltSizeBytes(saltSize);
+            }
+
+            digester.setConfig(digesterConfig);
+            this.digester = digester;
         }
 
-        digester.setConfig(digesterConfig);
         return digester;
     }
 

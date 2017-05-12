@@ -95,6 +95,8 @@ public class StringEncryptor implements Encryptor, org.jasypt.encryption.StringE
     private ServiceRegistration<OperationStats> encryptionStatsReg;
     private ServiceRegistration<OperationStats> decryptionStatsReg;
 
+    private org.jasypt.encryption.StringEncryptor encryptor;
+
     /**
      * Register StringEncryptor service instance.
      *
@@ -128,6 +130,7 @@ public class StringEncryptor implements Encryptor, org.jasypt.encryption.StringE
     void update(final Config config) {
         refreshConfig(config);
         defaultStringEncryptor.setProperties(getJasyptServiceProps(config.encryptor_alias(), config.encryption_algorithm()));
+        encryptor = null;
     }
 
     /**
@@ -155,6 +158,7 @@ public class StringEncryptor implements Encryptor, org.jasypt.encryption.StringE
             fileWatcher = null;
             encryptionStatsReg = null;
             decryptionStatsReg = null;
+            encryptor = null;
         }
     }
 
@@ -199,36 +203,40 @@ public class StringEncryptor implements Encryptor, org.jasypt.encryption.StringE
     }
 
     private org.jasypt.encryption.StringEncryptor getEncryptor() {
-        final EnvironmentStringPBEConfig encryptorConfig = new EnvironmentStringPBEConfig();
-        encryptorConfig.setAlgorithm(algorithm);
-        if (outputType != null) {
-            encryptorConfig.setStringOutputType(outputType);
-        }
-        if (keyObtentionIterations > 0) {
-            encryptorConfig.setKeyObtentionIterations(keyObtentionIterations);
-        }
+        if (encryptor == null) {
+            final EnvironmentStringPBEConfig encryptorConfig = new EnvironmentStringPBEConfig();
+            encryptorConfig.setAlgorithm(algorithm);
+            if (outputType != null) {
+                encryptorConfig.setStringOutputType(outputType);
+            }
+            if (keyObtentionIterations > 0) {
+                encryptorConfig.setKeyObtentionIterations(keyObtentionIterations);
+            }
 
-        if (password != null) {
-            encryptorConfig.setPasswordCharArray(password);
-        } else if (passwordFile != null) {
-            encryptorConfig.setPasswordCharArray(loadPasswordFromFile(passwordFile));
-            if (enablePasswordFileWatcher) {
-                synchronized (this) {
-                    if (fileWatcher == null) {
-                        fileWatcher = new PasswordFileWatcher(passwordFile);
-                        final Thread thread = new Thread(fileWatcher, passwordFile + " watcher");
-                        thread.start();
+            if (password != null) {
+                encryptorConfig.setPasswordCharArray(password);
+            } else if (passwordFile != null) {
+                encryptorConfig.setPasswordCharArray(loadPasswordFromFile(passwordFile));
+                if (enablePasswordFileWatcher) {
+                    synchronized (this) {
+                        if (fileWatcher == null) {
+                            fileWatcher = new PasswordFileWatcher(passwordFile);
+                            final Thread thread = new Thread(fileWatcher, passwordFile + " watcher");
+                            thread.start();
+                        }
                     }
                 }
+            } else if (passwordEnvName != null) {
+                encryptorConfig.setPasswordEnvName(passwordEnvName);
+            } else if (passwordSysPropertyName != null) {
+                encryptorConfig.setPasswordSysPropertyName(passwordSysPropertyName);
             }
-        } else if (passwordEnvName != null) {
-            encryptorConfig.setPasswordEnvName(passwordEnvName);
-        } else if (passwordSysPropertyName != null) {
-            encryptorConfig.setPasswordSysPropertyName(passwordSysPropertyName);
+
+            final StandardPBEStringEncryptor encryptor = new StandardPBEStringEncryptor();
+            encryptor.setConfig(encryptorConfig);
+            this.encryptor = encryptor;
         }
 
-        final StandardPBEStringEncryptor encryptor = new StandardPBEStringEncryptor();
-        encryptor.setConfig(encryptorConfig);
         return encryptor;
     }
 
