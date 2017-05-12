@@ -39,16 +39,16 @@ public class JmxOperationStatsProvider {
         packageName = config.jmx_package();
         mbs = ManagementFactory.getPlatformMBeanServer();
 
-        mbeans.keySet().parallelStream().forEach(e -> {
-            register(e);
-        });
+        for (final OperationStats os : mbeans.keySet()) {
+            register(os);
+        }
     }
 
     @Deactivate
     void stop() {
-        mbeans.keySet().parallelStream().forEach(name -> {
-            unregister(name);
-        });
+        for (final OperationStats os : mbeans.keySet()) {
+            unregister(os);
+        }
 
         mbs = null;
     }
