@@ -64,14 +64,27 @@ public class StringEncryptor implements Encryptor, org.jasypt.encryption.StringE
         boolean encryptor_enablePasswordFileWatcher() default DEFAULT_ENABLE_PASSWORD_FILE_WATCHER;
     }
 
+    @lombok.Setter
     private String alias;
+
+    @lombok.Setter
     private String algorithm;
+
+    @lombok.Setter
     private String outputType;
+
+    @lombok.Setter
     private int keyObtentionIterations;
 
     private char[] password;
+
+    @lombok.Setter
     private String passwordFile;
+
+    @lombok.Setter
     private String passwordEnvName;
+
+    @lombok.Setter
     private String passwordSysPropertyName;
 
     private FileWatcher fileWatcher;

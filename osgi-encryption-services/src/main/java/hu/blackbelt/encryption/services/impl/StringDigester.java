@@ -39,17 +39,28 @@ public class StringDigester implements Digester, org.jasypt.digest.StringDigeste
         int digest_iterations();
 
         @AttributeDefinition(required = false, name = "Salt size", type = AttributeType.INTEGER)
-        int digest_saltSize() default -1;
+        int digest_saltSize() default DEFAULT_SALT_SIZE;
 
         @AttributeDefinition(required = false, name = "Alias for digester")
         String digester_alias();
     }
 
+    @lombok.Setter
     private String alias;
+
+    @lombok.Setter
     private String algorithm;
+
+    @lombok.Setter
     private String outputType;
+
+    @lombok.Setter
     private int iterations;
-    private int saltSize;
+
+    public static final int DEFAULT_SALT_SIZE = -1;
+
+    @lombok.Setter
+    private int saltSize = DEFAULT_SALT_SIZE;
 
     /**
      * OSGi service registration of Jasypt service (PAX-JDBC uses that service interface).
