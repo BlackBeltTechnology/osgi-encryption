@@ -1,13 +1,14 @@
 package hu.blackbelt.encryption.services.impl;
 
 import hu.blackbelt.encryption.services.Digester;
+import hu.blackbelt.encryption.services.metrics.OperationStats;
 import lombok.extern.slf4j.Slf4j;
 import org.jasypt.digest.StandardStringDigester;
 import org.jasypt.digest.config.DigesterConfig;
 import org.jasypt.digest.config.EnvironmentStringDigesterConfig;
-import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
 import org.osgi.framework.ServiceRegistration;
+import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.*;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.Designate;
@@ -16,22 +17,14 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 import java.util.Dictionary;
 import java.util.Hashtable;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
 @Component(immediate = true, configurationPolicy = ConfigurationPolicy.REQUIRE)
 @Designate(ocd = StringDigester.Config.class)
 @Slf4j
 public class StringDigester implements Digester {
 
-    private AtomicLong digestTime = new AtomicLong();
-    private AtomicLong validateTime = new AtomicLong();
-
-    private AtomicInteger directErrors = new AtomicInteger();
-    private AtomicInteger validateErrors = new AtomicInteger();
-
-    private AtomicInteger digestCount = new AtomicInteger();
-    private AtomicInteger validateCount = new AtomicInteger();
+    private hu.blackbelt.encryption.services.impl.OperationStats digestStats = new hu.blackbelt.encryption.services.impl.OperationStats();
+    private hu.blackbelt.encryption.services.impl.OperationStats digestValidationStats = new hu.blackbelt.encryption.services.impl.OperationStats();
 
     @SuppressWarnings("checkstyle:JavadocMethod")
     @ObjectClassDefinition(name = "String digester configuration")
@@ -51,21 +44,34 @@ public class StringDigester implements Digester {
      */
     private ServiceRegistration<org.jasypt.digest.StringDigester> defaultStringDigester;
 
+    private ServiceRegistration<OperationStats> digestStatsReg;
+    private ServiceRegistration<OperationStats> digestValidationStatsReg;
+
     private EnvironmentStringDigesterConfig digesterConfig;
     private StandardStringDigester digester;
 
     /**
      * Register StringDigester service instance.
      *
-     * @param context bundle context
-     * @param config  configuration options
+     * @param cc     component context
+     * @param config configuration options
      */
     @Activate
-    public void start(final BundleContext context, final StringDigester.Config config) {
+    void start(final ComponentContext cc, final StringDigester.Config config) {
         digester = new StandardStringDigester();
         digester.setConfig(refreshConfig(config));
 
-        defaultStringDigester = context.registerService(org.jasypt.digest.StringDigester.class, digester, getJasyptServiceProps(config.digester_alias(), config.digest_algorithm()));
+        final Dictionary<String, Object> digestProps = new Hashtable<>();
+        digestProps.put("alias", config.digester_alias());
+        digestProps.put("type", OperationStats.Type.DIGEST);
+        digestStatsReg = cc.getBundleContext().registerService(OperationStats.class, digestStats, digestProps);
+
+        final Dictionary<String, Object> digestValidationProps = new Hashtable<>();
+        digestValidationProps.put("alias", config.digest_algorithm());
+        digestValidationProps.put("type", OperationStats.Type.VALIDATE_DIGEST);
+        digestValidationStatsReg = cc.getBundleContext().registerService(OperationStats.class, digestValidationStats, digestValidationProps);
+
+        defaultStringDigester = cc.getBundleContext().registerService(org.jasypt.digest.StringDigester.class, digester, getJasyptServiceProps(config.digester_alias(), config.digest_algorithm()));
     }
 
     /**
@@ -74,7 +80,7 @@ public class StringDigester implements Digester {
      * @param config configuration options
      */
     @Modified
-    public void update(final StringDigester.Config config) {
+    void update(final StringDigester.Config config) {
         refreshConfig(config);
 
         defaultStringDigester.setProperties(getJasyptServiceProps(config.digester_alias(), config.digest_algorithm()));
@@ -84,15 +90,25 @@ public class StringDigester implements Digester {
      * Unregister StringDigester service instance.
      */
     @Deactivate
-    public void stop() {
+    void stop() {
         digester = null;
         digesterConfig = null;
         try {
             if (defaultStringDigester != null) {
                 defaultStringDigester.unregister();
             }
+
+            if (digestStatsReg != null) {
+                digestStatsReg.unregister();
+            }
+
+            if (digestValidationStatsReg != null) {
+                digestValidationStatsReg.unregister();
+            }
         } finally {
             defaultStringDigester = null;
+            digestStatsReg = null;
+            digestValidationStatsReg = null;
         }
     }
 
@@ -134,12 +150,11 @@ public class StringDigester implements Digester {
         try {
             return digester.digest(data);
         } catch (RuntimeException ex) {
-            directErrors.incrementAndGet();
+            digestStats.incrementErrors();
             throw ex;
         } finally {
             final Long endTs = System.currentTimeMillis();
-            digestTime.addAndGet(endTs - startTs);
-            digestCount.incrementAndGet();
+            digestStats.setProcessingTime(endTs - startTs);
         }
     }
 
@@ -153,12 +168,11 @@ public class StringDigester implements Digester {
         try {
             return digester.matches(data, digest);
         } catch (RuntimeException ex) {
-            validateErrors.incrementAndGet();
+            digestValidationStats.incrementErrors();
             throw ex;
         } finally {
             final Long endTs = System.currentTimeMillis();
-            validateTime.addAndGet(endTs - startTs);
-            validateCount.incrementAndGet();
+            digestValidationStats.setProcessingTime(endTs - startTs);
         }
     }
 }

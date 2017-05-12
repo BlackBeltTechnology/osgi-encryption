@@ -2,6 +2,7 @@ package hu.blackbelt.encryption.services.impl;
 
 import hu.blackbelt.encryption.services.Encryptor;
 import hu.blackbelt.encryption.services.internal.FileWatcher;
+import hu.blackbelt.encryption.services.metrics.OperationStats;
 import lombok.extern.slf4j.Slf4j;
 import org.jasypt.encryption.pbe.StandardPBEStringEncryptor;
 import org.jasypt.encryption.pbe.config.EnvironmentStringPBEConfig;
@@ -25,22 +26,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Dictionary;
 import java.util.Hashtable;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
 @Component(immediate = true, service = Encryptor.class, configurationPolicy = ConfigurationPolicy.REQUIRE)
 @Designate(ocd = StringEncryptor.Config.class)
 @Slf4j
 public class StringEncryptor implements Encryptor, org.jasypt.encryption.StringEncryptor {
-
-    private AtomicLong encryptionTime = new AtomicLong();
-    private AtomicLong decyptionTime = new AtomicLong();
-
-    private AtomicInteger encryptionErrors = new AtomicInteger();
-    private AtomicInteger decryptionErrors = new AtomicInteger();
-
-    private AtomicInteger encryptionCount = new AtomicInteger();
-    private AtomicInteger decryptionCount = new AtomicInteger();
 
     @SuppressWarnings("checkstyle:JavadocMethod")
     @ObjectClassDefinition(name = "String encryptor configuration")
@@ -80,6 +70,9 @@ public class StringEncryptor implements Encryptor, org.jasypt.encryption.StringE
 
     private ComponentContext cc;
 
+    private hu.blackbelt.encryption.services.impl.OperationStats encryptionStats = new hu.blackbelt.encryption.services.impl.OperationStats();
+    private hu.blackbelt.encryption.services.impl.OperationStats decryptionStats = new hu.blackbelt.encryption.services.impl.OperationStats();
+
     @Reference(policyOption = ReferencePolicyOption.GREEDY)
     private ConfigurationAdmin configAdmin;
 
@@ -91,15 +84,29 @@ public class StringEncryptor implements Encryptor, org.jasypt.encryption.StringE
      */
     private ServiceRegistration<org.jasypt.encryption.StringEncryptor> defaultStringEncryptor;
 
+    private ServiceRegistration<OperationStats> encryptionStatsReg;
+    private ServiceRegistration<OperationStats> decryptionStatsReg;
+
     /**
      * Register StringEncryptor service instance.
      *
-     * @param cc     bundle context
+     * @param cc     component context
      * @param config configuration options
      */
     @Activate
-    public void start(final ComponentContext cc, final Config config) {
+    void start(final ComponentContext cc, final Config config) {
         this.cc = cc;
+
+        final Dictionary<String, Object> encryptionProps = new Hashtable<>();
+        encryptionProps.put("alias", config.encryptor_alias());
+        encryptionProps.put("type", OperationStats.Type.ENCRYPTION);
+        encryptionStatsReg = cc.getBundleContext().registerService(OperationStats.class, encryptionStats, encryptionProps);
+
+        final Dictionary<String, Object> decryptionProps = new Hashtable<>();
+        decryptionProps.put("alias", config.encryptor_alias());
+        decryptionProps.put("type", OperationStats.Type.DECRYPTION);
+        decryptionStatsReg = cc.getBundleContext().registerService(OperationStats.class, decryptionStats, decryptionProps);
+
         refreshConfig(config);
         defaultStringEncryptor = cc.getBundleContext().registerService(org.jasypt.encryption.StringEncryptor.class, this, getJasyptServiceProps(config.encryptor_alias(), config.encryption_algorithm()));
     }
@@ -110,7 +117,7 @@ public class StringEncryptor implements Encryptor, org.jasypt.encryption.StringE
      * @param config configuration options
      */
     @Modified
-    public void update(final Config config) {
+    void update(final Config config) {
         refreshConfig(config);
         defaultStringEncryptor.setProperties(getJasyptServiceProps(config.encryptor_alias(), config.encryption_algorithm()));
     }
@@ -119,10 +126,17 @@ public class StringEncryptor implements Encryptor, org.jasypt.encryption.StringE
      * Unregister StringEncryptor service instance.
      */
     @Deactivate
-    public void stop() {
+    void stop() {
         try {
             if (defaultStringEncryptor != null) {
                 defaultStringEncryptor.unregister();
+            }
+
+            if (encryptionStatsReg != null) {
+                encryptionStatsReg.unregister();
+            }
+            if (decryptionStatsReg != null) {
+                decryptionStatsReg.unregister();
             }
 
             if (fileWatcher != null) {
@@ -131,6 +145,8 @@ public class StringEncryptor implements Encryptor, org.jasypt.encryption.StringE
         } finally {
             defaultStringEncryptor = null;
             fileWatcher = null;
+            encryptionStatsReg = null;
+            decryptionStatsReg = null;
         }
     }
 
@@ -229,12 +245,11 @@ public class StringEncryptor implements Encryptor, org.jasypt.encryption.StringE
         try {
             return getEncryptor().encrypt(message);
         } catch (RuntimeException ex) {
-            encryptionErrors.incrementAndGet();
+            encryptionStats.incrementErrors();
             throw ex;
         } finally {
             final Long endTs = System.currentTimeMillis();
-            encryptionTime.addAndGet(endTs - startTs);
-            encryptionCount.incrementAndGet();
+            encryptionStats.setProcessingTime(endTs - startTs);
         }
     }
 
@@ -245,12 +260,11 @@ public class StringEncryptor implements Encryptor, org.jasypt.encryption.StringE
         try {
             return getEncryptor().decrypt(encryptedMessage);
         } catch (RuntimeException ex) {
-            decryptionErrors.incrementAndGet();
+            decryptionStats.incrementErrors();
             throw ex;
         } finally {
             final Long endTs = System.currentTimeMillis();
-            decyptionTime.addAndGet(endTs - startTs);
-            decryptionCount.incrementAndGet();
+            decryptionStats.setProcessingTime(endTs - startTs);
         }
     }
 

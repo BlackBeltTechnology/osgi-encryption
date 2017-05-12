@@ -9,11 +9,11 @@
         <relativePath>../osgi-encryption-parent</relativePath>
     </parent>
 
-    <artifactId>osgi-encryption-services</artifactId>
+    <artifactId>osgi-encryption-metrics</artifactId>
     <packaging>bundle</packaging>
 
-    <name>OSGi encryption services</name>
-    <description>Implementation of encryption services.</description>
+    <name>OSGi encryption metrics</name>
+    <description>Metrics extension for encryption services.</description>
 
     <build>
         <plugins>
@@ -23,8 +23,7 @@
                 <configuration>
                     <instructions>
                         <Export-Package>
-                            hu.blackbelt.encryption.services;version=${project.version},
-                            hu.blackbelt.encryption.services.metrics;version=${project.version}
+                            hu.blackbelt.encryption.jmx;version=${project.version}
                         </Export-Package>
                     </instructions>
                 </configuration>
@@ -39,10 +38,6 @@
         </dependency>
         <dependency>
             <groupId>org.osgi</groupId>
-            <artifactId>osgi.cmpn</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.osgi</groupId>
             <artifactId>org.osgi.service.component.annotations</artifactId>
         </dependency>
         <dependency>
@@ -51,8 +46,10 @@
         </dependency>
 
         <dependency>
-            <groupId>org.jasypt</groupId>
-            <artifactId>jasypt</artifactId>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>osgi-encryption-services</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 </project>
