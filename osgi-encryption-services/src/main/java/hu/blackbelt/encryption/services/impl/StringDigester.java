@@ -4,24 +4,23 @@ import hu.blackbelt.encryption.services.Digester;
 import hu.blackbelt.encryption.services.metrics.OperationStats;
 import lombok.extern.slf4j.Slf4j;
 import org.jasypt.digest.StandardStringDigester;
-import org.jasypt.digest.config.DigesterConfig;
 import org.jasypt.digest.config.EnvironmentStringDigesterConfig;
 import org.osgi.framework.Constants;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.*;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
+import org.osgi.service.metatype.annotations.AttributeType;
 import org.osgi.service.metatype.annotations.Designate;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
 import java.util.Dictionary;
 import java.util.Hashtable;
-import java.util.Objects;
 
-@Component(immediate = true, configurationPolicy = ConfigurationPolicy.REQUIRE)
+@Component(immediate = true, service = Digester.class, configurationPolicy = ConfigurationPolicy.REQUIRE)
 @Designate(ocd = StringDigester.Config.class)
 @Slf4j
-public class StringDigester implements Digester {
+public class StringDigester implements Digester, org.jasypt.digest.StringDigester {
 
     private hu.blackbelt.encryption.services.impl.OperationStats digestStats = new hu.blackbelt.encryption.services.impl.OperationStats();
     private hu.blackbelt.encryption.services.impl.OperationStats digestValidationStats = new hu.blackbelt.encryption.services.impl.OperationStats();
@@ -33,11 +32,24 @@ public class StringDigester implements Digester {
         @AttributeDefinition(name = "Digest algorithm")
         String digest_algorithm();
 
+        @AttributeDefinition(required = false, name = "Output type (base64/hexadecimal)")
+        String digest_outputType();
+
+        @AttributeDefinition(required = false, name = "Iterations", type = AttributeType.INTEGER)
+        int digest_iterations();
+
+        @AttributeDefinition(required = false, name = "Salt size", type = AttributeType.INTEGER)
+        int digest_saltSize() default -1;
+
         @AttributeDefinition(required = false, name = "Alias for digester")
         String digester_alias();
     }
 
     private String alias;
+    private String algorithm;
+    private String outputType;
+    private int iterations;
+    private int saltSize;
 
     /**
      * OSGi service registration of Jasypt service (PAX-JDBC uses that service interface).
@@ -47,9 +59,6 @@ public class StringDigester implements Digester {
     private ServiceRegistration<OperationStats> digestStatsReg;
     private ServiceRegistration<OperationStats> digestValidationStatsReg;
 
-    private EnvironmentStringDigesterConfig digesterConfig;
-    private StandardStringDigester digester;
-
     /**
      * Register StringDigester service instance.
      *
@@ -58,9 +67,6 @@ public class StringDigester implements Digester {
      */
     @Activate
     void start(final ComponentContext cc, final StringDigester.Config config) {
-        digester = new StandardStringDigester();
-        digester.setConfig(refreshConfig(config));
-
         final Dictionary<String, Object> digestProps = new Hashtable<>();
         digestProps.put("alias", config.digester_alias());
         digestProps.put("type", OperationStats.Type.DIGEST);
@@ -71,7 +77,10 @@ public class StringDigester implements Digester {
         digestValidationProps.put("type", OperationStats.Type.VALIDATE_DIGEST);
         digestValidationStatsReg = cc.getBundleContext().registerService(OperationStats.class, digestValidationStats, digestValidationProps);
 
-        defaultStringDigester = cc.getBundleContext().registerService(org.jasypt.digest.StringDigester.class, digester, getJasyptServiceProps(config.digester_alias(), config.digest_algorithm()));
+        refreshConfig(config);
+        defaultStringDigester = cc.getBundleContext().registerService(org.jasypt.digest.StringDigester.class, this, getJasyptServiceProps(config.digester_alias(), config.digest_algorithm()));
+
+        log.info("digest = " + digest("teszt"));
     }
 
     /**
@@ -82,7 +91,7 @@ public class StringDigester implements Digester {
     @Modified
     void update(final StringDigester.Config config) {
         refreshConfig(config);
-
+        log.info("digest = " + digest("teszt"));
         defaultStringDigester.setProperties(getJasyptServiceProps(config.digester_alias(), config.digest_algorithm()));
     }
 
@@ -91,8 +100,6 @@ public class StringDigester implements Digester {
      */
     @Deactivate
     void stop() {
-        digester = null;
-        digesterConfig = null;
         try {
             if (defaultStringDigester != null) {
                 defaultStringDigester.unregister();
@@ -112,16 +119,16 @@ public class StringDigester implements Digester {
         }
     }
 
-    private DigesterConfig refreshConfig(final StringDigester.Config config) {
+    private void refreshConfig(final StringDigester.Config config) {
         alias = config.digester_alias();
         if (alias == null) {
             log.warn("Alias is not configured for Digester component.");
         }
 
-        digesterConfig = new EnvironmentStringDigesterConfig();
-        digesterConfig.setAlgorithm(config.digest_algorithm());
-
-        return digesterConfig;
+        algorithm = config.digest_algorithm();
+        outputType = config.digest_outputType();
+        iterations = config.digest_iterations();
+        saltSize = config.digest_saltSize();
     }
 
     private Dictionary<String, Object> getJasyptServiceProps(final String alias, final String algorithm) {
@@ -140,15 +147,30 @@ public class StringDigester implements Digester {
         return alias;
     }
 
+    private org.jasypt.digest.StringDigester getDigester() {
+        final StandardStringDigester digester = new StandardStringDigester();
+        final EnvironmentStringDigesterConfig digesterConfig = new EnvironmentStringDigesterConfig();
+        digesterConfig.setAlgorithm(algorithm);
+        if (outputType != null) {
+            digesterConfig.setStringOutputType(outputType);
+        }
+        if (iterations > 0) {
+            digesterConfig.setIterations(iterations);
+        }
+        if (saltSize >= 0) {
+            digesterConfig.setSaltSizeBytes(saltSize);
+        }
+
+        digester.setConfig(digesterConfig);
+        return digester;
+    }
+
     @Override
     public String digest(final String data) {
         final long startTs = System.currentTimeMillis();
 
-        Objects.requireNonNull(digester, "Digester is not initialized yet");
-        Objects.requireNonNull(digesterConfig, "Missing digester configuration");
-
         try {
-            return digester.digest(data);
+            return getDigester().digest(data);
         } catch (RuntimeException ex) {
             digestStats.incrementErrors();
             throw ex;
@@ -162,11 +184,8 @@ public class StringDigester implements Digester {
     public boolean matches(final String data, final String digest) {
         final long startTs = System.currentTimeMillis();
 
-        Objects.requireNonNull(digester, "Digester is not initialized yet");
-        Objects.requireNonNull(digesterConfig, "Missing digester configuration");
-
         try {
-            return digester.matches(data, digest);
+            return getDigester().matches(data, digest);
         } catch (RuntimeException ex) {
             digestValidationStats.incrementErrors();
             throw ex;

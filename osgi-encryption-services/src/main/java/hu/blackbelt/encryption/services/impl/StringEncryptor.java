@@ -39,6 +39,12 @@ public class StringEncryptor implements Encryptor, org.jasypt.encryption.StringE
         @AttributeDefinition(name = "Encryption algorithm")
         String encryption_algorithm();
 
+        @AttributeDefinition(required = false, name = "Output type (base64/hexadecimal)")
+        String enrcyption_outputType();
+
+        @AttributeDefinition(required = false, name = "Key obtention iterations", type = AttributeType.INTEGER)
+        int enrcyption_keyObtentionIterations();
+
         @AttributeDefinition(required = false, name = "Password for encryption", type = AttributeType.PASSWORD)
         String encryption_password();
 
@@ -60,6 +66,8 @@ public class StringEncryptor implements Encryptor, org.jasypt.encryption.StringE
 
     private String alias;
     private String algorithm;
+    private String outputType;
+    private int keyObtentionIterations;
 
     private char[] password;
     private String passwordFile;
@@ -170,6 +178,8 @@ public class StringEncryptor implements Encryptor, org.jasypt.encryption.StringE
         passwordSysPropertyName = config.encryption_passwordSysPropertyName();
 
         algorithm = config.encryption_algorithm();
+        outputType = config.enrcyption_outputType();
+        keyObtentionIterations = config.enrcyption_keyObtentionIterations();
     }
 
     private Dictionary<String, Object> getJasyptServiceProps(final String alias, final String algorithm) {
@@ -191,6 +201,12 @@ public class StringEncryptor implements Encryptor, org.jasypt.encryption.StringE
     private org.jasypt.encryption.StringEncryptor getEncryptor() {
         final EnvironmentStringPBEConfig encryptorConfig = new EnvironmentStringPBEConfig();
         encryptorConfig.setAlgorithm(algorithm);
+        if (outputType != null) {
+            encryptorConfig.setStringOutputType(outputType);
+        }
+        if (keyObtentionIterations > 0) {
+            encryptorConfig.setKeyObtentionIterations(keyObtentionIterations);
+        }
 
         if (password != null) {
             encryptorConfig.setPasswordCharArray(password);
