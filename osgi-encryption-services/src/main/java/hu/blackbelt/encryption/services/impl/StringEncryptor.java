@@ -51,6 +51,12 @@ public class StringEncryptor implements Encryptor, org.jasypt.encryption.StringE
         @AttributeDefinition(required = false, name = "Password file for encryption")
         String encryption_passwordFile();
 
+        @AttributeDefinition(required = false, name = "Environment variable holding password file for encryption")
+        String encryption_passwordFileEnvName();
+
+        @AttributeDefinition(required = false, name = "JVM argument holding password file path for encryption")
+        String encryption_passwordFileSysPropertyName();
+
         @AttributeDefinition(required = false, name = "Environment variable holding password for encryption")
         String encryption_passwordEnvName();
 
@@ -80,6 +86,12 @@ public class StringEncryptor implements Encryptor, org.jasypt.encryption.StringE
 
     @lombok.Setter
     private String passwordFile;
+
+    @lombok.Setter
+    private String passwordFileEnvName;
+
+    @lombok.Setter
+    private String passwordFileSysPropertyName;
 
     @lombok.Setter
     private String passwordEnvName;
@@ -191,8 +203,16 @@ public class StringEncryptor implements Encryptor, org.jasypt.encryption.StringE
 
         password = config.encryption_password() != null ? config.encryption_password().toCharArray() : null;
         passwordFile = config.encryption_passwordFile();
+        passwordFileEnvName = config.encryption_passwordFileEnvName();
+        passwordFileSysPropertyName = config.encryption_passwordFileSysPropertyName();
         passwordEnvName = config.encryption_passwordEnvName();
         passwordSysPropertyName = config.encryption_passwordSysPropertyName();
+
+        if (passwordFile == null && passwordFileEnvName != null) {
+            passwordFile = System.getenv(passwordFileEnvName);
+        } else if (passwordFile == null && passwordFileSysPropertyName != null) {
+            passwordFile = System.getProperty(passwordSysPropertyName);
+        }
 
         algorithm = config.encryption_algorithm();
         outputType = config.enrcyption_outputType();
