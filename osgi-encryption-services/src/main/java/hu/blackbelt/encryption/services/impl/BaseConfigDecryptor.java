@@ -16,6 +16,10 @@ public abstract class BaseConfigDecryptor implements ConfigDecryptor {
 
     @Override
     public String decrypt(final String encryptedMessage) {
+        if (encryptedMessage == null){
+            return null;
+        }
+
         final Matcher mWithAias = PATTERN_WITH_ALIAS.matcher(encryptedMessage);
         final String encrypted;
         final String alias;
@@ -42,6 +46,6 @@ public abstract class BaseConfigDecryptor implements ConfigDecryptor {
 
     @Override
     public boolean isEncrypted(final String value) {
-        return value != null ? PATTERN.matcher(value).matches() : false;
+        return value != null ? PATTERN_WITH_ALIAS.matcher(value).matches() || PATTERN.matcher(value).matches() : false;
     }
 }
