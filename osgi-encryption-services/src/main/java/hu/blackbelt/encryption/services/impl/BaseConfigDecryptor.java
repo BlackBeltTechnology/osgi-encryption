@@ -32,7 +32,12 @@ public abstract class BaseConfigDecryptor implements ConfigDecryptor {
                 encrypted = mWithoutAias.group(1);
                 alias = null;
             } else {
-                throw new IllegalArgumentException("Invalid encrypted message format");
+                if (log.isDebugEnabled()) {
+                    log.debug("Configuration is not encrypted, using plain text value");
+                }
+
+                // not encrypted, return original value
+                return encryptedMessage;
             }
         }
 
