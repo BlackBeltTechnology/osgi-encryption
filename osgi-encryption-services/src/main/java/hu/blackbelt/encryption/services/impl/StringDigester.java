@@ -161,7 +161,6 @@ public class StringDigester implements Digester, org.jasypt.digest.StringDigeste
 
     private org.jasypt.digest.StringDigester getDigester() {
         if (digester == null) {
-            final StandardStringDigester digester = new StandardStringDigester();
             final EnvironmentStringDigesterConfig digesterConfig = new EnvironmentStringDigesterConfig();
             digesterConfig.setAlgorithm(algorithm);
             if (outputType != null) {
@@ -174,6 +173,7 @@ public class StringDigester implements Digester, org.jasypt.digest.StringDigeste
                 digesterConfig.setSaltSizeBytes(saltSize);
             }
 
+            final StandardStringDigester digester = new StandardStringDigester();
             digester.setConfig(digesterConfig);
             this.digester = digester;
         }

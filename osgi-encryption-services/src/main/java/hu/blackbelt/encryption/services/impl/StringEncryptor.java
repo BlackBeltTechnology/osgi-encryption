@@ -208,12 +208,6 @@ public class StringEncryptor implements Encryptor, org.jasypt.encryption.StringE
         passwordEnvName = config.encryption_passwordEnvName();
         passwordSysPropertyName = config.encryption_passwordSysPropertyName();
 
-        if (passwordFile == null && passwordFileEnvName != null) {
-            passwordFile = System.getenv(passwordFileEnvName);
-        } else if (passwordFile == null && passwordFileSysPropertyName != null) {
-            passwordFile = System.getProperty(passwordSysPropertyName);
-        }
-
         algorithm = config.encryption_algorithm();
         outputType = config.enrcyption_outputType();
         keyObtentionIterations = config.enrcyption_keyObtentionIterations();
@@ -244,6 +238,12 @@ public class StringEncryptor implements Encryptor, org.jasypt.encryption.StringE
             }
             if (keyObtentionIterations > 0) {
                 encryptorConfig.setKeyObtentionIterations(keyObtentionIterations);
+            }
+
+            if (passwordFile == null && passwordFileEnvName != null) {
+                passwordFile = System.getenv(passwordFileEnvName);
+            } else if (passwordFile == null && passwordFileSysPropertyName != null) {
+                passwordFile = System.getProperty(passwordFileSysPropertyName);
             }
 
             if (password != null) {
