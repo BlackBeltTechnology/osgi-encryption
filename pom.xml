@@ -12,8 +12,9 @@
     <modules>
         <module>osgi-encryption-parent</module>
         <module>osgi-encryption-services</module>
-        <module>osgi-encryption-karaf-commands</module>
         <module>osgi-encryption-metrics</module>
         <module>osgi-encryption-test</module>
+        <module>osgi-encryption-karaf-commands</module>
+        <module>osgi-encryption-karaf-feature</module>
     </modules>
 </project>
