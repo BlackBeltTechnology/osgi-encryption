@@ -17,4 +17,21 @@
         <module>osgi-encryption-karaf-commands</module>
         <module>osgi-encryption-karaf-feature</module>
     </modules>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>external.atlassian.jgitflow</groupId>
+                <artifactId>jgitflow-maven-plugin</artifactId>
+                <version>${jgitflow-maven-plugin.version}</version>
+                <configuration>
+                    <noDeploy>true</noDeploy>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <properties>
+        <jgitflow-maven-plugin.version>1.0-m5.1</jgitflow-maven-plugin.version>
+    </properties>
 </project>
