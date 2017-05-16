@@ -66,6 +66,9 @@ public class StringEncryptor implements Encryptor, org.jasypt.encryption.StringE
         @AttributeDefinition(required = false, name = "Alias for encryptor")
         String encryptor_alias();
 
+        @AttributeDefinition(required = false, name = "Encryptor provider name")
+        String encryptor_provider();
+
         @AttributeDefinition(required = false, name = "Enable password file watcher", description = "Enable password file watcher and trigger configuration reload on change", type = AttributeType.BOOLEAN)
         boolean encryptor_enablePasswordFileWatcher() default DEFAULT_ENABLE_PASSWORD_FILE_WATCHER;
     }
@@ -98,6 +101,9 @@ public class StringEncryptor implements Encryptor, org.jasypt.encryption.StringE
 
     @lombok.Setter
     private String passwordSysPropertyName;
+
+    @lombok.Setter
+    private String providerName;
 
     private FileWatcher fileWatcher;
 
@@ -209,6 +215,7 @@ public class StringEncryptor implements Encryptor, org.jasypt.encryption.StringE
         passwordSysPropertyName = config.encryption_passwordSysPropertyName();
 
         algorithm = config.encryption_algorithm();
+        providerName = config.encryptor_provider();
         outputType = config.enrcyption_outputType();
         keyObtentionIterations = config.enrcyption_keyObtentionIterations();
     }
@@ -233,6 +240,9 @@ public class StringEncryptor implements Encryptor, org.jasypt.encryption.StringE
         if (encryptor == null) {
             final EnvironmentStringPBEConfig encryptorConfig = new EnvironmentStringPBEConfig();
             encryptorConfig.setAlgorithm(algorithm);
+            if (providerName != null) {
+                encryptorConfig.setProviderName(providerName);
+            }
             if (outputType != null) {
                 encryptorConfig.setStringOutputType(outputType);
             }

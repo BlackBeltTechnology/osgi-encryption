@@ -25,6 +25,11 @@
                             hu.blackbelt.encryption.services;version=${project.version},
                             hu.blackbelt.encryption.services.metrics;version=${project.version}
                         </Export-Package>
+                        <Import-Package>
+                            org.bouncycastle.jce.provider;resolution:=optional,
+                            *
+                        </Import-Package>
+                        <Bundle-Activator>hu.blackbelt.encryption.services.impl.Activator</Bundle-Activator>
                     </instructions>
                 </configuration>
             </plugin>

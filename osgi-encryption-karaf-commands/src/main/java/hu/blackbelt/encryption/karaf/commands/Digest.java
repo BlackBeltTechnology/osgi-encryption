@@ -19,6 +19,9 @@ public class Digest implements Action {
     @Completion(DigestAlgorithmCompleter.class)
     private String algorithm = "SHA";
 
+    @Option(name = "--provider", description = "Provider name", required = false, multiValued = false)
+    private String providerName;
+
     @Option(name = "--digest", description = "Digest value for validation", required = false, multiValued = false)
     private String digest;
     
@@ -37,6 +40,9 @@ public class Digest implements Action {
         final StandardStringDigester digester = new StandardStringDigester();
         final EnvironmentStringDigesterConfig config = new EnvironmentStringDigesterConfig();
         config.setAlgorithm(algorithm);
+        if (providerName != null) {
+            config.setProviderName(providerName);
+        }
         if (saltSize != null) {
             config.setSaltSizeBytes(saltSize);
         }
