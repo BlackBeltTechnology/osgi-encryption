@@ -70,6 +70,7 @@
         <jgitflow-maven-plugin.version>1.0-m5.1</jgitflow-maven-plugin.version>
 
         <jasypt.version>1.9.2</jasypt.version>
+        <bouncycastle.version>1.57</bouncycastle.version>
     </properties>
 
     <dependencies>
@@ -139,6 +140,14 @@
                 <groupId>org.jasypt</groupId>
                 <artifactId>jasypt</artifactId>
                 <version>${jasypt.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bcprov-jdk15on</artifactId>
+                <version>${bouncycastle.version}</version>
+                <scope>provided</scope>
+                <optional>true</optional>
             </dependency>
         </dependencies>
     </dependencyManagement>

@@ -19,11 +19,17 @@ public class Decrypt implements Action {
     @Completion(PBEAlgorithmCompleter.class)
     private String algorithm;
 
+    @Option(name = "--provider", description = "Provider name", required = false, multiValued = false)
+    private String providerName;
+
     @Option(name = "--password", description = "Password for encryption", required = false, multiValued = false)
     private String password;
 
     @Option(name = "--password-env", description = "Password environment variable for encryption", required = false, multiValued = false)
     private String passwordEnvName;
+
+    @Option(name = "--password-prop", description = "Password system property for encryption", required = false, multiValued = false)
+    private String passwordSysPropertyName;
     
     @Option(name = "--outputType", description = "Output type", required = false, multiValued = false)
     @Completion(OutputTypeCompleter.class)
@@ -34,10 +40,15 @@ public class Decrypt implements Action {
         final StandardPBEStringEncryptor encryptor = new StandardPBEStringEncryptor();
         final EnvironmentStringPBEConfig config = new EnvironmentStringPBEConfig();
         config.setAlgorithm(algorithm);
+        if (providerName != null) {
+            config.setProviderName(providerName);
+        }
         if (password != null) {
             config.setPassword(password);
-        } else {
+        } else if (passwordEnvName != null) {
             config.setPasswordEnvName(passwordEnvName);
+        } else if (passwordSysPropertyName != null) {
+            config.setPasswordEnvName(passwordSysPropertyName);
         }
         config.setStringOutputType(outputType);
         encryptor.setConfig(config);

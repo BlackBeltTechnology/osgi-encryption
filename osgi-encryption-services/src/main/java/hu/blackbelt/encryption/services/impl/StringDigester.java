@@ -43,6 +43,9 @@ public class StringDigester implements Digester, org.jasypt.digest.StringDigeste
 
         @AttributeDefinition(required = false, name = "Alias for digester")
         String digester_alias();
+
+        @AttributeDefinition(required = false, name = "Digester provider name")
+        String digester_provider();
     }
 
     @lombok.Setter
@@ -61,6 +64,9 @@ public class StringDigester implements Digester, org.jasypt.digest.StringDigeste
 
     @lombok.Setter
     private int saltSize = DEFAULT_SALT_SIZE;
+
+    @lombok.Setter
+    private String providerName;
 
     /**
      * OSGi service registration of Jasypt service (PAX-JDBC uses that service interface).
@@ -138,6 +144,7 @@ public class StringDigester implements Digester, org.jasypt.digest.StringDigeste
         }
 
         algorithm = config.digest_algorithm();
+        providerName = config.digester_provider();
         outputType = config.digest_outputType();
         iterations = config.digest_iterations();
         saltSize = config.digest_saltSize();
@@ -163,6 +170,9 @@ public class StringDigester implements Digester, org.jasypt.digest.StringDigeste
         if (digester == null) {
             final EnvironmentStringDigesterConfig digesterConfig = new EnvironmentStringDigesterConfig();
             digesterConfig.setAlgorithm(algorithm);
+            if (providerName != null) {
+                digesterConfig.setProviderName(providerName);
+            }
             if (outputType != null) {
                 digesterConfig.setStringOutputType(outputType);
             }
