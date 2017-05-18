@@ -1,0 +1,62 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>hu.blackbelt</groupId>
+        <artifactId>osgi-encryption-parent</artifactId>
+        <version>1.0.0</version>
+        <relativePath>../osgi-encryption-parent</relativePath>
+    </parent>
+
+    <artifactId>osgi-encryption-services</artifactId>
+    <packaging>bundle</packaging>
+
+    <name>OSGi encryption services</name>
+    <description>Implementation of encryption services.</description>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <configuration>
+                    <instructions>
+                        <Export-Package>
+                            hu.blackbelt.encryption.services;version=${project.version},
+                            hu.blackbelt.encryption.services.metrics;version=${project.version}
+                        </Export-Package>
+                        <Import-Package>
+                            org.bouncycastle.jce.provider;resolution:=optional,
+                            *
+                        </Import-Package>
+                        <Bundle-Activator>hu.blackbelt.encryption.services.impl.Activator</Bundle-Activator>
+                    </instructions>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.osgi</groupId>
+            <artifactId>osgi.core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.osgi</groupId>
+            <artifactId>osgi.cmpn</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.osgi</groupId>
+            <artifactId>org.osgi.service.component.annotations</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.osgi</groupId>
+            <artifactId>org.osgi.service.metatype.annotations</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.jasypt</groupId>
+            <artifactId>jasypt</artifactId>
+        </dependency>
+    </dependencies>
+</project>

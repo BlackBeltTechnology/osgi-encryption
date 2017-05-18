@@ -1,0 +1,36 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>hu.blackbelt</groupId>
+    <artifactId>osgi-encryption</artifactId>
+    <version>1.0.0</version>
+    <packaging>pom</packaging>
+
+    <name>OSGi encryption aggregator</name>
+
+    <modules>
+        <module>osgi-encryption-parent</module>
+        <module>osgi-encryption-services</module>
+        <module>osgi-encryption-metrics</module>
+        <module>osgi-encryption-test</module>
+        <module>osgi-encryption-karaf-commands</module>
+        <module>osgi-encryption-karaf-feature</module>
+    </modules>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>external.atlassian.jgitflow</groupId>
+                <artifactId>jgitflow-maven-plugin</artifactId>
+                <version>${jgitflow-maven-plugin.version}</version>
+                <configuration>
+                    <noDeploy>true</noDeploy>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <properties>
+        <jgitflow-maven-plugin.version>1.0-m5.1</jgitflow-maven-plugin.version>
+    </properties>
+</project>
