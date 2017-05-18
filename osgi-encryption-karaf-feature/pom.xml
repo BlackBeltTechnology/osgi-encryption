@@ -4,7 +4,7 @@
     <parent>
         <groupId>hu.blackbelt</groupId>
         <artifactId>osgi-encryption-parent</artifactId>
-        <version>1.0.0</version>
+        <version>1.0.1-SNAPSHOT</version>
         <relativePath>../osgi-encryption-parent</relativePath>
     </parent>
 
