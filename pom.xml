@@ -32,5 +32,6 @@
 
     <properties>
         <jgitflow-maven-plugin.version>1.0-m5.1</jgitflow-maven-plugin.version>
+        <maven.deploy.skip>true</maven.deploy.skip>
     </properties>
 </project>
