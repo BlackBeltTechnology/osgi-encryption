@@ -17,6 +17,12 @@
         <module>osgi-encryption-karaf-feature</module>
     </modules>
 
+    <scm>
+        <connection>scm:git:git://github.com/BlackBeltTechnology/osgi-encryption.git</connection>
+        <developerConnection>scm:git:ssh://${git.username}@github.com:BlackBeltTechnology/osgi-encryption.git</developerConnection>
+        <url>http://github.com/BlackBeltTechnology/osgi-encryption</url>
+    </scm>
+
     <build>
         <plugins>
             <plugin>
@@ -26,6 +32,22 @@
                 <configuration>
                     <noDeploy>true</noDeploy>
                     <username>${git.username}</username>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-scm-plugin</artifactId>
+                <version>1.9.5</version>
+                <configuration>
+                    <connectionType>developerConnection</connectionType>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-release-plugin</artifactId>
+                <version>2.5.3</version>
+                <configuration>
+                    <autoVersionSubmodules>true</autoVersionSubmodules>
                 </configuration>
             </plugin>
         </plugins>
