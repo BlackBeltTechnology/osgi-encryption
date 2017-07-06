@@ -65,4 +65,8 @@
             </plugin>
         </plugins>
     </build>
+
+    <properties>
+        <requirement.java.version>${java.version}</requirement.java.version>
+    </properties>
 </project>
