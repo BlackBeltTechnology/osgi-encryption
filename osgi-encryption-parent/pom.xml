@@ -22,7 +22,7 @@
 
     <scm>
         <connection>scm:git:git://github.com/BlackBeltTechnology/osgi-encryption.git</connection>
-        <developerConnection>scm:git:ssh://github.com:BlackBeltTechnology/osgi-encryption.git</developerConnection>
+        <developerConnection>scm:git:ssh://${git.username}@github.com:BlackBeltTechnology/osgi-encryption.git</developerConnection>
         <url>http://github.com/BlackBeltTechnology/osgi-encryption</url>
     </scm>
 
@@ -204,19 +204,27 @@
                     <doUpdate>false</doUpdate>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>external.atlassian.jgitflow</groupId>
+                <artifactId>jgitflow-maven-plugin</artifactId>
+                <version>${jgitflow-maven-plugin.version}</version>
+                <configuration>
+                    <noDeploy>true</noDeploy>
+                    <username>${git.username}</username>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-scm-plugin</artifactId>
+                <version>1.9.5</version>
+                <configuration>
+                    <connectionType>developerConnection</connectionType>
+                </configuration>
+            </plugin>
         </plugins>
 
         <pluginManagement>
             <plugins>
-                <plugin>
-                    <groupId>external.atlassian.jgitflow</groupId>
-                    <artifactId>jgitflow-maven-plugin</artifactId>
-                    <version>${jgitflow-maven-plugin.version}</version>
-                    <configuration>
-                        <noDeploy>true</noDeploy>
-                        <username>${git.username}</username>
-                    </configuration>
-                </plugin>
                 <plugin>
                     <groupId>org.apache.felix</groupId>
                     <artifactId>maven-bundle-plugin</artifactId>

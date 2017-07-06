@@ -25,6 +25,7 @@
                 <version>${jgitflow-maven-plugin.version}</version>
                 <configuration>
                     <noDeploy>true</noDeploy>
+                    <username>${git.username}</username>
                 </configuration>
             </plugin>
         </plugins>
