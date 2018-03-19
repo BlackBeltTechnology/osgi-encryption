@@ -1,10 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<features name="osgi-encryption-feature-${project.version}" xmlns="http://karaf.apache.org/xmlns/features/v1.4.0">
+<features name="${project.artifactId}-${project.version}" xmlns="http://karaf.apache.org/xmlns/features/v1.4.0">
     <feature name="osgi-encryption" description="Encryption bundles and services" version="${project.version}">
-        <requirement>osgi.ee;filter:=&quot;(&amp;(osgi.ee=JavaSE)(version&gt;=${requirement.java.version}))&quot;</requirement>
-
-        <feature dependency="true" prerequisite="true">scr</feature>
-        <feature dependency="true" prerequisite="true">jasypt-encryption</feature>
+        <feature>scr</feature>
+        <feature>jasypt-encryption</feature>
 
         <bundle start-level="40">mvn:hu.blackbelt/osgi-encryption-services/${project.version}</bundle>
         <bundle start-level="40">mvn:hu.blackbelt/osgi-encryption-metrics/${project.version}</bundle>
