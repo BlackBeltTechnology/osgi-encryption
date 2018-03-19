@@ -27,7 +27,7 @@
                 <extensions>true</extensions>
                 <configuration>
                     <instructions>
-                        <Export-Package/>
+                        <Export-Package />
                         <Karaf-Commands>*</Karaf-Commands>
                     </instructions>
                 </configuration>
