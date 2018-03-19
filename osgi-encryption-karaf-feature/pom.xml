@@ -42,7 +42,6 @@
                                 <artifact>
                                     <file>target/classes/osgi-encryption-feature.xml</file>
                                     <type>xml</type>
-                                    <classifier>karaf4-features</classifier>
                                 </artifact>
                             </artifacts>
                         </configuration>
