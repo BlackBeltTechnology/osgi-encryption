@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<features name="osgi-encryption-${project.version}" xmlns="http://karaf.apache.org/xmlns/features/v1.4.0">
+    <feature name="osgi-encryption" description="Encryption bundles and services" version="${project.version}" install="false">
+        <feature>scr</feature>
+        <feature>jasypt-encryption</feature>
+
+        <bundle>mvn:${project.groupId}/osgi-encryption-services/${project.version}</bundle>
+        <bundle>mvn:${project.groupId}/osgi-encryption-metrics/${project.version}</bundle>
+        <bundle>mvn:${project.groupId}/osgi-encryption-karaf-commands/${project.version}</bundle>
+    </feature>
+</features>

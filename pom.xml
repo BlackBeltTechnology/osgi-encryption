@@ -7,7 +7,7 @@
     <version>1.2.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
-    <name>OSGi encryption aggregator</name>
+    <name>OSGi encryption reactor</name>
 
     <modules>
         <module>osgi-encryption-parent</module>
@@ -15,7 +15,7 @@
         <module>osgi-encryption-metrics</module>
         <module>osgi-encryption-test</module>
         <module>osgi-encryption-karaf-commands</module>
-        <module>osgi-encryption-karaf-feature</module>
+        <module>osgi-encryption-karaf-features</module>
     </modules>
 
     <scm>
@@ -76,13 +76,31 @@
                             <tag>${project.version}</tag>
                             <fileSets>
                                 <fileSet>
-                                    <directory>osgi-api/target</directory>
+                                    <directory>osgi-encryption-karaf-commands/target</directory>
                                     <includes>
                                         <include>*.jar</include>
                                     </includes>
                                 </fileSet>
                                 <fileSet>
-                                    <directory>osgi-impl/target</directory>
+                                    <directory>osgi-encryption-karaf-features/target/feature</directory>
+                                    <includes>
+                                        <include>feature.xml</include>
+                                    </includes>
+                                </fileSet>
+                                <fileSet>
+                                    <directory>osgi-encryption-metrics/target</directory>
+                                    <includes>
+                                        <include>*.jar</include>
+                                    </includes>
+                                </fileSet>
+                                <fileSet>
+                                    <directory>osgi-encryption-services/target</directory>
+                                    <includes>
+                                        <include>*.jar</include>
+                                    </includes>
+                                </fileSet>
+                                <fileSet>
+                                    <directory>osgi-encryption-test/target</directory>
                                     <includes>
                                         <include>*.jar</include>
                                     </includes>
