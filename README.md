@@ -14,13 +14,11 @@ Wrapper OSGi components for [Jasypt](http://www.jasypt.org).
 
 ## How to build
 
-Use the following command to build and sign (including JavaDoc and source JARs) modules.
+Use the following command to build modules.
 
 ~~~~
-mvn clean install -Pbuild-extras -Psign
+mvn clean install
 ~~~~
-
-Add `deploy` argument to upload artifacts to Sonatype OSS Repository.
 
 ## How to use
 
@@ -29,6 +27,7 @@ Add `deploy` argument to upload artifacts to Sonatype OSS Repository.
 Install as Apache Karaf feature (Apache Felix SCR and Jasypt encryption dependencies are installed too).
 
 ~~~~
-feature:repo-add mvn:hu.blackbelt/osgi-encryption-karaf-feature/VERSION/xml/karaf4-features
+feature:repo-add mvn:hu.blackbelt/osgi-encryption-karaf-features/1.2.0/xml/features
 feature:install osgi-encryption
 ~~~~
+
