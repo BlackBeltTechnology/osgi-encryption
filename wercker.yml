@@ -20,13 +20,13 @@ build:
     - wercker/maven:
       goals: versions:set
       pom: ./osgi-encryption-parent/pom.xml
-      maven_opts: -DnewVersion=${VERSION_NUMBER}
+      maven_opts: -Dtycho.mode=maven -DnewVersion=${VERSION_NUMBER}
       cache_repo: true
 
     - wercker/maven:
       goals: versions:set
       pom: ./pom.xml
-      maven_opts: -DnewVersion=${VERSION_FROM_POM_BASE_VERSION}_${VERSION_FROM_GIT_TAG_CURRENT_BRANCH_VALID_NAME}-${VERSION_FROM_GIT_TAG_COMMIT_COUNT}
+      maven_opts: -Dtycho.mode=maven -DnewVersion=${VERSION_FROM_POM_BASE_VERSION}_${VERSION_FROM_GIT_TAG_CURRENT_BRANCH_VALID_NAME}-${VERSION_FROM_GIT_TAG_COMMIT_COUNT}
       cache_repo: true
 
     - wercker/maven:
