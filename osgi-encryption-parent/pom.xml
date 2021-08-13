@@ -58,7 +58,7 @@
         <jgitflow-maven-plugin.version>1.0-m5.1</jgitflow-maven-plugin.version>
 
         <jasypt.version>1.9.2</jasypt.version>
-        <bouncycastle.version>1.57</bouncycastle.version>
+        <bouncycastle.version>1.67</bouncycastle.version>
     </properties>
 
     <dependencies>
