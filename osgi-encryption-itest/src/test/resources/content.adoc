@@ -1,0 +1,101 @@
+[.text-right]
+Ügyiratszám: *--registrationNumber--*
+
+[.text-center]
+*--title--*
+
+amely létrejött egyrészről a
+
+*--contractorName--*
+[cols="1,2", frame="none", grid="none"]
+|===
+|székhely: | *--contractorAddress--*
+|adószám: | *--contractorTaxNumber--*
+|cégjegyzékszám: | *--contractorRegistrationNumber--*
+|bankszámlaszám, bank | *--contractorBankAccountNumber--*, *--contractorBankName--*
+|képviseli: | *--contractorSignerName--*
+|ügygazda: | *--officerName--*
+|===
+(a továbbiakban „Társaság”), másrészről
+
+*--partnerName--*
+[cols="1,2", frame="none", grid="none"]
+|===
+|székhely: | *--partnerAddress--*
+|adószám: | *--partnerTaxNumber--*
+|cégjegyzékszám: | *--partnerRegistrationNumber--*
+|bankszámlaszám, bank | *--partnerBankAccountNumber--*, *--partnerBankName--*
+|képviseletre jogosult: | *--partnerRepresentative--*
+|ügygazda: | *--officerName--*
+|===
+(a továbbiakban „Partner” között)
+
+(Társaság és Partner a továbbiakban külön-külön „*Fél*”, együttesen „*Felek*”)
+
+--signPlace--, --signDate-- napján az alábbi feltételek mellett (a továbbiakban „*Szerződés*”).
+
+*Kapcsolattartók:*
+
+A rendes üzletmenet körébe tartozó értesítések tekintetében:
+
+[cols='1,1,1', frame="none", grid="none"]
+|===
+||Társaság részéről	|Partner részéről
+|Név, titulus:	|[*]|[*]
+|Levelezési cím:|[*]|[*]
+|E-mail:|[*]|[*]
+|===
+
+Nem a rendes üzletmenet körébe tartozó értesítések tekintetében:
+
+[cols='1,1,1', frame="none", grid="none"]
+|===
+||Társaság részéről|Partner részéről
+|Név, titulus: | [*] | [*]
+|Levelezési cím: | [*]|[*]
+|E-mail:|[*]|[*]
+|===
+
+:sectnums:
+
+[none]
+* *{counter:sec}. A Szerződés tárgya*
+[none]
+** *{sec}.{counter:sec2}* --topic--
+
+[none]
+:!sec2:
+* *{counter:sec}. Az ellenszolgáltatás*
++
+[none]
+:!sec3:
+** *{sec}.{counter:sec2}.* A Felek megállapodnak, hogy a jelen Szerződés teljesítése esetén [Társaságnak/Partnernek] járó ellenszolgáltatást az alábbiak szerint határozzák meg:
+[none]
+*** *{sec}.{sec2}.{counter:sec3}.* Fizetési kötelezettség részletei: --financeDetails--
+*** *{sec}.{sec2}.{counter:sec3}.* Áfa mértéke: --taxRate--
+*** *{sec}.{sec2}.{counter:sec3}.* A fizetési kötelezettség --performance--. --financeDetails--
+
+:!sec2:
+[none]
+* *{counter:sec}. A szerződés létrejötte, hatálya*
++
+[none]
+:!sec3:
+** *{sec}.{counter:sec2}.* Felek megállapodnak, hogy jelen Szerződés mindkét Fél általi aláírásával jön létre. Partner kifejezetten elfogadja, hogy abban az esetben, ha a jelen Szerződést a Felek nem egy napon írták alá, úgy a jelen Szerződés létrejötte napjának azt a napot tekintik, amikor azt Társaság aláírta, függetlenül attól, hogy Partner azt mikor írta alá.
+** *{sec}.{counter:sec2}.* [Felek megállapodnak, hogy jelen Szerződéssel korábbi szóbeli megállapodásukat foglalják írásba. A jelen Szerződés [éééé.hh.nn. ] napján lép hatályba.] A jelen Szerződés időtartama [határozatlan. /határozott,  annak hatálya [éééé.hh.nn. napjáig/a szerződésszerű teljesítésig] tart.
+
+Jelen Szerződést a Felek elolvasás után, mint akaratukkal mindenben megegyezőt jóváhagyólag aláírják az alábbiak szerint:
+
+[cols="^1,^1", frame="none2", grid="none", stripes="none" width="100%"]
+|===
+|Társaság nevében aláírta: | Partner nevében aláírta:
+|......................................|......................................
+| --signee-- | Képviseletében eljár: --partnerRepresentative--
+| --signPlace--, --signDate-- | Kelt:
+|===
+
+[cols="^1,^1", frame="none2", grid="none", stripes="none" width="50%"]
+|===
+|*Pénzügyileg jóváhagyta:*| *Jogilag jóváhagyta:*
+|--legalApprover--, --legalApproveDate-- napján | --financialApprover--, financialApproveDate-- napján
+|===
