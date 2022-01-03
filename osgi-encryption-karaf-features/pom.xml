@@ -7,7 +7,7 @@
         <version>${revision}</version>
     </parent>
     <artifactId>osgi-encryption-karaf-feature</artifactId>
-    <packaging>feature</packaging>
+    <packaging>bundle</packaging>
 
     <name>OSGi encryption Karaf features</name>
     <description>Apache Karaf features for encryption services.</description>
