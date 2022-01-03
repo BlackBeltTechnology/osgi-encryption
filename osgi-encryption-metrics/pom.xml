@@ -4,8 +4,7 @@
     <parent>
         <groupId>hu.blackbelt</groupId>
         <artifactId>osgi-encryption-parent</artifactId>
-        <version>1.2.0-SNAPSHOT</version>
-        <relativePath>../osgi-encryption-parent</relativePath>
+        <version>${revision}</version>
     </parent>
 
     <artifactId>osgi-encryption-metrics</artifactId>
@@ -13,6 +12,15 @@
 
     <name>OSGi encryption metrics</name>
     <description>Metrics extension for encryption services.</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>osgi-encryption-services</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
 
     <build>
         <plugins>
@@ -30,30 +38,4 @@
         </plugins>
     </build>
 
-    <dependencies>
-        <dependency>
-            <groupId>org.osgi</groupId>
-            <artifactId>osgi.core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.osgi</groupId>
-            <artifactId>org.osgi.service.component.annotations</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.osgi</groupId>
-            <artifactId>org.osgi.service.metatype.annotations</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>osgi-encryption-services</artifactId>
-            <version>${project.version}</version>
-            <scope>provided</scope>
-        </dependency>
-    </dependencies>
 </project>
