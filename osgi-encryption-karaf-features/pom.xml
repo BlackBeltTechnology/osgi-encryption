@@ -6,7 +6,7 @@
         <artifactId>osgi-encryption-parent</artifactId>
         <version>${revision}</version>
     </parent>
-    <artifactId>osgi-encryption-karaf-feature</artifactId>
+    <artifactId>osgi-encryption-karaf-features</artifactId>
     <packaging>bundle</packaging>
 
     <name>OSGi encryption Karaf features</name>
