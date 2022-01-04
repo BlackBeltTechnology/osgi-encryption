@@ -303,7 +303,7 @@
             </dependency>
             <dependency>
                 <groupId>hu.blackbelt</groupId>
-                <artifactId>osgi-encryption-karaf-features</artifactId>
+                <artifactId>osgi-encryption-karaf-feature</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

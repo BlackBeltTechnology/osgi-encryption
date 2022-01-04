@@ -9,7 +9,7 @@
     <artifactId>osgi-encryption-karaf-feature</artifactId>
     <packaging>bundle</packaging>
 
-    <name>OSGi encryption Karaf features</name>
+    <name>OSGi encryption Karaf feature</name>
     <description>Apache Karaf features for encryption services.</description>
 
     <build>
