@@ -321,6 +321,11 @@
                 <artifactId>osgi-encryption-test</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <dependency>
+                <groupId>hu.blackbelt</groupId>
+                <artifactId>osgi-encryption-itest</artifactId>
+                <version>${project.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
