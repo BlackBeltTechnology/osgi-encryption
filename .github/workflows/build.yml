@@ -159,7 +159,7 @@ jobs:
         #          tycho-versions:update-eclipse-metadata
         # Eclipse specific build block. END
 
-        # Phase 1 - Build and deploy to local stage (/target/stage
+      # Phase 1 - Build and deploy to local stage (/target/stage
       - name: Build with Maven (build, test)
         run: |-
           ./mvnw -B -Dstyle.color=always \
@@ -177,29 +177,32 @@ jobs:
           -Prelease-judong \
           deploy
 
+
       # For maven central repository release
-      #      - name: Deploy with Maven (central)
-      #        run: |-
-      #          ./mvnw -B -Dstyle.color=always \
-      #               -Drevision=${{ steps.version.outputs.version }} \
-      #               -DdeployOnly \
-      #               -Prelease-central \
-      #               deploy
+      - name: Deploy with Maven (central)
+        if: ${{ always() && contains(github.head_ref, 'release') && job.status == 'success' }}
+        run: |-
+          ./mvnw -B -Dstyle.color=always \
+          -Drevision=${{ steps.version.outputs.version }} \
+          DdeployOnly \
+          -Prelease-central \
+          deploy
 
       # Eclipse specific build block. BEGIN
       # Release artifact as P2 repository
-      #            - name: Release P2
-      #              run: |-
-      #                ./mvnw -B -Dstyle.color=always \
-      #                -Drevision=${{ steps.version.outputs.version }} \
-      #                -Dtycho.mode=maven \
-      #                -DskipModules=true \
-      #                -Prelease-p2-judong \
-      #                wagon:upload@upload-repository
+      - name: Release P2
+        if: ${{ always() && contains(github.head_ref, 'release') && job.status == 'success' }}
+        run: |-
+          ./mvnw -B -Dstyle.color=always \
+          -Drevision=${{ steps.version.outputs.version }} \
+          -Dtycho.mode=maven \
+          -DskipModules=true \
+          -Prelease-p2-judong \
+          wagon:upload@upload-repository
 
-      #
-      #            - name: Restore changes in pom.xml files (ie. ser version)
-      #              run:  git diff --name-only -- '*/pom.xml' | sed 's, ,\\&,g' | xargs git checkout --
+
+      - name: Restore changes in pom.xml files (ie. ser version)
+        run: git diff --name-only -- '*/pom.xml' | sed 's, ,\\&,g' | xargs git checkout --
       # Eclipse specific build block. END
 
       - name: Create version tag
@@ -270,33 +273,33 @@ jobs:
           echo "${{ steps.message.outputs.message }}"
           echo "${{ steps.message.outputs.message }}" > build.msg
 
-#      - name: Create success message
-#        if: ${{ !failure() && !cancelled() }}
-#        run: |-
-#          echo ":check_mark_button: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" > build.msg
-#          echo "Version: ${{ steps.version.outputs.version }}" >> build.msg
-#          echo "Commit: ${{ steps.context.outputs.commitMsg }}" >> build.msg
-#      - name: Create faliure message
-#        if: ${{ failure() }}
-#        run: |-
-#          echo ":cross_mark: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" > build.msg
-#          echo "Commit: ${{ steps.context.outputs.commitMsg }}" >> build.msg
-#      - name: Create canceled message
-#        if: ${{ cancelled() }}
-#        run: |-
-#          echo ":warning: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" > build.msg
-#          echo "Commit: ${{ steps.context.outputs.commitMsg }}" >> build.msg
-#      - name: Tag commit
-#        uses: tvdias/github-tagger@v0.0.1
-#        with:
-#          repo-token: ${{ secrets.GITHUB_TOKEN }}
-#          tag: v${{ steps.version.outputs.version }}
+      - name: Create success message
+        if: ${{ !failure() && !cancelled() }}
+        run: |-
+          echo ":check_mark_button: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" > build.msg
+          echo "Version: ${{ steps.version.outputs.version }}" >> build.msg
+          echo "Commit: ${{ steps.context.outputs.commitMsg }}" >> build.msg
+      - name: Create faliure message
+        if: ${{ failure() }}
+        run: |-
+          echo ":cross_mark: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" > build.msg
+          echo "Commit: ${{ steps.context.outputs.commitMsg }}" >> build.msg
+      - name: Create canceled message
+        if: ${{ cancelled() }}
+        run: |-
+          echo ":warning: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" > build.msg
+          echo "Commit: ${{ steps.context.outputs.commitMsg }}" >> build.msg
+      - name: Tag commit
+        uses: tvdias/github-tagger@v0.0.1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          tag: v${{ steps.version.outputs.version }}
 
-#      - name: Send message to skype
-#        uses: Eloco/docker-action-send-skype@v2
-#        if: always()
-#        with:
-#          skype_username: ${{ secrets.SKYPE_USERNAME }}
-#          skype_password: ${{ secrets.SKYPE_PASSWORD }}
-#          skype_ids: 19:0503749da2e44ed9910046678012bdf7@thread.skype
-#          send_msg_path: build.msg
+      - name: Send message to skype
+        uses: Eloco/docker-action-send-skype@v2
+        if: always()
+        with:
+          skype_username: ${{ secrets.SKYPE_USERNAME }}
+          skype_password: ${{ secrets.SKYPE_PASSWORD }}
+          skype_ids: 19:0503749da2e44ed9910046678012bdf7@thread.skype
+          send_msg_path: build.msg
