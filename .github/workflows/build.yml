@@ -110,6 +110,8 @@ jobs:
                     "url": "https://nexus.judo.technology/repository/maven-judong/"
                  }
             ]
+            
+
 #      - name: Print settings.xml
 #        run: cat $HOME/.m2/settings.xml
 #
@@ -123,6 +125,9 @@ jobs:
       #          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
       #          restore-keys: ${{ runner.os }}-m2-
 
+      # Eclipse specific build block. BEGIN
+      # It manages tycho versions in P2 world.
+      # Different eclipse project target / category can be in different places
       #      - name: Set project version
       #        run: |-
       #          ./mvnw -B -Dstyle.color=always \
@@ -153,28 +158,51 @@ jobs:
       #          -Dtycho.mode=maven  \
       #          -P update-category-versions \
       #          tycho-versions:update-eclipse-metadata
-      #
+      # Eclipse specific build block. END
+
+        # Phase 1 - Build and deploy to local stage (/target/stage
       - name: Build with Maven (build, test)
         run: |-
           ./mvnw -B -Dstyle.color=always \
           -Drevision=${{ steps.version.outputs.version }} \
+          -Psign-artifacts \
+          -Prelease-local-stage \
           install
 
+      # Phase 2 - Deploy to judo-ng nexus
       - name: Deploy with Maven (judo-ng)
         run: |-
           ./mvnw -B -Dstyle.color=always \
           -Drevision=${{ steps.version.outputs.version }} \
-          -Psign-artifacts,release-judong \
-          bundle:bundle nexus-staging:deploy@judong-deploy
-      #      - name: Release P2
+          -DdeployOnly \
+          -Prelease-judong \
+          deploy
+      
+
+      # For maven central repository release
+      #      - name: Deploy with Maven (central)
       #        run: |-
       #          ./mvnw -B -Dstyle.color=always \
-      #          -Dtycho.mode=maven \
-      #          -Prelease-dummy,release-p2-judong \
-      #          -DdeployOnly \
-      #          -DskipTests=true \
-      #          -DskipModules=true \
-      #          deploy
+      #               -Drevision=${{ steps.version.outputs.version }} \
+      #               -DdeployOnly \
+      #               -Prelease-central \
+      #               deploy
+
+      # Eclipse specific build block. BEGIN
+      # Release artifact as P2 repository
+      #            - name: Release P2
+      #              run: |-
+      #                ./mvnw -B -Dstyle.color=always \
+      #                -Drevision=${{ steps.version.outputs.version }} \
+      #                -Dtycho.mode=maven \
+      #                -DskipModules=true \
+      #                -Prelease-p2-judong \
+      #                wagon:upload@upload-repository
+
+      #
+      #            - name: Restore changes in pom.xml files (ie. ser version)
+      #              run:  git diff --name-only -- '*/pom.xml' | sed 's, ,\\&,g' | xargs git checkout --
+      # Eclipse specific build block. END
 
       - name: Create version tag
         uses: actions/github-script@v5
@@ -242,7 +270,7 @@ jobs:
       - name: Write message to file
         run: |-
           echo "${{ steps.message.outputs.message }}"
-          echo "${{ steps.message.outputs.message }}" > build.msg       
+          echo "${{ steps.message.outputs.message }}" > build.msg
      
      
      
