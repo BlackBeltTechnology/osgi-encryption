@@ -1,7 +1,7 @@
 name: Add JIRA description to PR
 on:
   pull_request:
-    types: [opened, edited]
+    types: [ opened, edited ]
     branches:
       - '!release/*'
       - '!increment/*'

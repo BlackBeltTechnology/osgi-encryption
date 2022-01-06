@@ -46,7 +46,7 @@ jobs:
 
       - name: Calculate version number
         id: version
-        run: |-          
+        run: |-
           TAG_NAME=$(echo "${{ steps.context.outputs.branch }}" | cut -d ' ' -f2 | tr '#\/\.-' '_')
           BASE_VERSION=$(./mvnw org.apache.maven.plugins:maven-help-plugin:3.2.0:evaluate -Dtycho.mode=maven -DskipModules=true -Dexpression=project.version -q -DforceStdout | cut -d'-' -f 1)
           if [[ "${{ github.event.inputs.is_release }}" == "true" ]]; then

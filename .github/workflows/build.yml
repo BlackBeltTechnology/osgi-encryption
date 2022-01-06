@@ -39,20 +39,20 @@ jobs:
           echo "Head ref: ${{ github.head_ref }}"
           echo "Base ref: ${{ github.base_ref }}"
 
-#      - name: Import GPG key
-#        id: import_gpg
-#        uses: crazy-max/ghaction-import-gpg@v4
-#        with:
-#          gpg_private_key: ${{ secrets.GPG_SECRET_KEYS }}
-#          passphrase: ${{ secrets.GPG_PASSPHRASE }}
+      #      - name: Import GPG key
+      #        id: import_gpg
+      #        uses: crazy-max/ghaction-import-gpg@v4
+      #        with:
+      #          gpg_private_key: ${{ secrets.GPG_SECRET_KEYS }}
+      #          passphrase: ${{ secrets.GPG_PASSPHRASE }}
 
       - name: Set up JDK 11
         uses: actions/setup-java@v2
         with:
           java-version: '11'
           distribution: 'zulu'
-#          gpg-private-key: ${{ secrets.GPG_SECRET_KEYS }}
-#          gpg-passphrase: ${{ secrets.GPG_PASSPHRASE }}
+      #          gpg-private-key: ${{ secrets.GPG_SECRET_KEYS }}
+      #          gpg-passphrase: ${{ secrets.GPG_PASSPHRASE }}
 
       - name: Get the current PR number
         uses: jwalton/gh-find-current-pr@v1
@@ -77,11 +77,11 @@ jobs:
           echo "Building version: ${VERSION_NUMBER}"
           echo "::set-output name=version::${VERSION_NUMBER}"
 
-#      - name: List GPG keys
-#        run: gpg --list-keys
+      #      - name: List GPG keys
+      #        run: gpg --list-keys
 
-#      - name: Grep config
-#        run: gpg --version
+      #      - name: Grep config
+      #        run: gpg --version
 
       - name: Remove settings.xml
         run: rm $HOME/.m2/settings.xml || true
@@ -110,55 +110,54 @@ jobs:
                     "url": "https://nexus.judo.technology/repository/maven-judong/"
                  }
             ]
-            
 
-#      - name: Print settings.xml
-#        run: cat $HOME/.m2/settings.xml
-#
-#      - name: List GPG keys
-#        run: gpg --list-keys
+        #      - name: Print settings.xml
+        #        run: cat $HOME/.m2/settings.xml
+        #
+        #      - name: List GPG keys
+        #        run: gpg --list-keys
 
-      #      - name: Cache Maven packages
-      #        uses: actions/cache@v2
-      #        with:
-      #          path: ~/.m2
-      #          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-      #          restore-keys: ${{ runner.os }}-m2-
+        #      - name: Cache Maven packages
+        #        uses: actions/cache@v2
+        #        with:
+        #          path: ~/.m2
+        #          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+        #          restore-keys: ${{ runner.os }}-m2-
 
-      # Eclipse specific build block. BEGIN
-      # It manages tycho versions in P2 world.
-      # Different eclipse project target / category can be in different places
-      #      - name: Set project version
-      #        run: |-
-      #          ./mvnw -B -Dstyle.color=always \
-      #          -DnewVersion=${{ steps.version.outputs.version }} \
-      #          -DgenerateBackupPoms=false \
-      #          -Dtycho.mode=maven \
-      #          versions:set
-      #
-      #      - name: Update target definition
-      #        run: |-
-      #          ./mvnw -B -Dstyle.color=always \
-      #          -Dtycho.mode=maven  \
-      #          -P update-target-versions \
-      #          -f ./targetdefinition/pom.xml \
-      #          validate
-      #
-      #      - name: Update category
-      #        run: |-
-      #         ./mvnw -B -Dstyle.color=always \
-      #          -Dtycho.mode=maven \
-      #          -P update-category-versions \
-      #          -f ./site/pom.xml \
-      #          validate
-      #
-      #      - name: Set tycho version
-      #        run: |-
-      #          ./mvnw -B -Dstyle.color=always \
-      #          -Dtycho.mode=maven  \
-      #          -P update-category-versions \
-      #          tycho-versions:update-eclipse-metadata
-      # Eclipse specific build block. END
+        # Eclipse specific build block. BEGIN
+        # It manages tycho versions in P2 world.
+        # Different eclipse project target / category can be in different places
+        #      - name: Set project version
+        #        run: |-
+        #          ./mvnw -B -Dstyle.color=always \
+        #          -DnewVersion=${{ steps.version.outputs.version }} \
+        #          -DgenerateBackupPoms=false \
+        #          -Dtycho.mode=maven \
+        #          versions:set
+        #
+        #      - name: Update target definition
+        #        run: |-
+        #          ./mvnw -B -Dstyle.color=always \
+        #          -Dtycho.mode=maven  \
+        #          -P update-target-versions \
+        #          -f ./targetdefinition/pom.xml \
+        #          validate
+        #
+        #      - name: Update category
+        #        run: |-
+        #         ./mvnw -B -Dstyle.color=always \
+        #          -Dtycho.mode=maven \
+        #          -P update-category-versions \
+        #          -f ./site/pom.xml \
+        #          validate
+        #
+        #      - name: Set tycho version
+        #        run: |-
+        #          ./mvnw -B -Dstyle.color=always \
+        #          -Dtycho.mode=maven  \
+        #          -P update-category-versions \
+        #          tycho-versions:update-eclipse-metadata
+        # Eclipse specific build block. END
 
         # Phase 1 - Build and deploy to local stage (/target/stage
       - name: Build with Maven (build, test)
@@ -177,7 +176,6 @@ jobs:
           -DdeployOnly \
           -Prelease-judong \
           deploy
-      
 
       # For maven central repository release
       #      - name: Deploy with Maven (central)
@@ -271,9 +269,6 @@ jobs:
         run: |-
           echo "${{ steps.message.outputs.message }}"
           echo "${{ steps.message.outputs.message }}" > build.msg
-     
-     
-     
 
 #      - name: Create success message
 #        if: ${{ !failure() && !cancelled() }}
