@@ -9,7 +9,7 @@
     <name>OSGi encryption reactor</name>
 
     <properties>
-        <revision>1.0.0-SNAPSHOT</revision>
+        <revision>1.1.0-SNAPSHOT</revision>
         <maven>3.8.3</maven>
         <project-shortname>osgi-encryption</project-shortname>
         <project-repositoryId>BlackBeltTechnology/osgi-encryption</project-repositoryId>
@@ -20,8 +20,8 @@
         <src.dir>src/main</src.dir>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
-        <karaf-version>4.3.3</karaf-version>
-        <pax-exam-version>4.13.4</pax-exam-version>
+        <karaf-version>4.3.4</karaf-version>
+        <pax-exam-version>4.13.5</pax-exam-version>
         <log4j.configuration>log4j.properties</log4j.configuration>
         <asciidoctorj-version>2.5.2</asciidoctorj-version>
         <jruby-version>9.2.19.0</jruby-version>
@@ -169,7 +169,7 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>flatten-maven-plugin</artifactId>
-                <version>1.1.0</version>
+                <version>1.2.7</version>
                 <configuration>
                     <updatePomFile>true</updatePomFile>
                     <flattenMode>resolveCiFriendliesOnly</flattenMode>
@@ -187,6 +187,19 @@
                         <phase>clean</phase>
                         <goals>
                             <goal>clean</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>3.2.1</version>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar-no-fork</goal>
                         </goals>
                     </execution>
                 </executions>
@@ -303,7 +316,7 @@
             </dependency>
             <dependency>
                 <groupId>hu.blackbelt</groupId>
-                <artifactId>osgi-encryption-karaf-features</artifactId>
+                <artifactId>osgi-encryption-karaf-feature</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -321,12 +334,13 @@
                 <artifactId>osgi-encryption-test</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <dependency>
+                <groupId>hu.blackbelt</groupId>
+                <artifactId>osgi-encryption-itest</artifactId>
+                <version>${project.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
-
-
-
-
 
     <profiles>
         <profile>
@@ -353,23 +367,14 @@
             <build>
                 <plugins>
                     <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-gpg-plugin</artifactId>
-                        <version>1.6</version>
+                        <groupId>org.simplify4u.plugins</groupId>
+                        <artifactId>sign-maven-plugin</artifactId>
+                        <version>0.3.1</version>
                         <executions>
                             <execution>
-                                <id>sign-artifacts</id>
-                                <phase>verify</phase>
                                 <goals>
                                     <goal>sign</goal>
                                 </goals>
-                                <configuration>
-                                    <!-- This is necessary for gpg to not try to use the pinentry programs -->
-                                    <gpgArguments>
-                                        <arg>--pinentry-mode</arg>
-                                        <arg>loopback</arg>
-                                    </gpgArguments>
-                                </configuration>
                             </execution>
                         </executions>
                     </plugin>
@@ -378,7 +383,88 @@
         </profile>
 
         <profile>
+            <id>release-judong</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-deploy-plugin</artifactId>
+                        <version>2.8.2</version>
+                        <configuration>
+                            <skip>true</skip>
+                        </configuration>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.sonatype.plugins</groupId>
+                        <artifactId>nexus-staging-maven-plugin</artifactId>
+                        <version>1.6.8</version>
+                        <executions>
+                            <execution>
+                                <id>judong-deploy</id>
+                                <phase>deploy</phase>
+                                <goals>
+                                    <goal>deploy</goal>
+                                </goals>
+                                <configuration>
+                                    <serverId>judong-nexus-distribution</serverId>
+                                    <nexusUrl>https://nexus.judo.technology/repository/maven-judong-snapshots</nexusUrl>
+                                    <skipStaging>true</skipStaging>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+            <distributionManagement>
+                <snapshotRepository>
+                    <id>judong-nexus-distribution</id>
+                    <!--suppress UnresolvedMavenProperty -->
+                    <url>https://nexus.judo.technology/repository/maven-judong-snapshots/</url>
+                </snapshotRepository>
+                <repository>
+                    <id>judong-nexus-distribution</id>
+                    <!--suppress UnresolvedMavenProperty -->
+                    <url>https://nexus.judo.technology/repository/maven-judong-snapshots/</url>
+                </repository>
+            </distributionManagement>
+        </profile>
+
+
+        <profile>
             <id>release-dummy</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-deploy-plugin</artifactId>
+                        <version>2.8.2</version>
+                        <configuration>
+                            <skip>true</skip>
+                        </configuration>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.sonatype.plugins</groupId>
+                        <artifactId>nexus-staging-maven-plugin</artifactId>
+                        <version>1.6.8</version>
+                        <executions>
+                            <execution>
+                                <id>dummy-deploy</id>
+                                <phase>deploy</phase>
+                                <goals>
+                                    <goal>deploy</goal>
+                                </goals>
+                                <configuration>
+                                    <serverId>dummy-distribution</serverId>
+                                    <nexusUrl>file:///tmp/${project.groupId}-${project.artifactId}-${project.version}/maven-snapshot/</nexusUrl>
+                                    <autoReleaseAfterClose>true</autoReleaseAfterClose>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
             <distributionManagement>
                 <snapshotRepository>
                     <id>dummy-distribution</id>
@@ -392,45 +478,34 @@
         </profile>
 
         <profile>
-            <id>release-judong</id>
-            <distributionManagement>
-                <snapshotRepository>
-                    <id>judong-nexus-distribution</id>
-                    <!--suppress UnresolvedMavenProperty -->
-                    <url>https://nexus.judo.technology/repository/maven-judong-snapshots/</url>
-                </snapshotRepository>
-                <repository>
-                    <id>judong-nexus-distribution</id>
-                    <!--suppress UnresolvedMavenProperty -->
-                    <url>https://nexus.judo.technology/repository/maven-judong-snapshots/</url>
-                </repository>
-            </distributionManagement>
-        </profile>
-
-        <profile>
             <id>release-central</id>
             <build>
                 <plugins>
                     <plugin>
-                        <groupId>org.sonatype.plugins</groupId>
-                        <artifactId>nexus-staging-maven-plugin</artifactId>
-                        <extensions>true</extensions>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-deploy-plugin</artifactId>
+                        <version>2.8.2</version>
                         <configuration>
-                            <serverId>ossrh</serverId>
-                            <nexusUrl>https://oss.sonatype.org/</nexusUrl>
-                            <autoReleaseAfterClose>true</autoReleaseAfterClose>
+                            <skip>true</skip>
                         </configuration>
                     </plugin>
 
                     <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-source-plugin</artifactId>
+                        <groupId>org.sonatype.plugins</groupId>
+                        <artifactId>nexus-staging-maven-plugin</artifactId>
+                        <version>1.6.8</version>
                         <executions>
                             <execution>
-                                <id>attach-sources</id>
+                                <id>ossrh-deploy</id>
+                                <phase>deploy</phase>
                                 <goals>
-                                    <goal>jar-no-fork</goal>
+                                    <goal>deploy</goal>
                                 </goals>
+                                <configuration>
+                                    <serverId>ossrh</serverId>
+                                    <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+                                    <autoReleaseAfterClose>true</autoReleaseAfterClose>
+                                </configuration>
                             </execution>
                         </executions>
                     </plugin>
@@ -446,6 +521,34 @@
                     <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
                 </repository>
             </distributionManagement>
+        </profile>
+
+        <profile>
+            <id>release-p2-judong</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>wagon-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>upload-repository</id>
+                                <phase>deploy</phase>
+                                <goals>
+                                    <goal>upload</goal>
+                                </goals>
+                                <configuration>
+                                    <serverId>judong-nexus-distribution</serverId>
+                                    <fromDir>${basedir}/site/target/repository</fromDir>
+                                    <includes>*/**</includes>
+                                    <url>dav:https://nexus.judo.technology/repository/p2-judong/</url>
+                                    <toDir>${project-shortname}/${project.version}</toDir>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
 
     </profiles>
