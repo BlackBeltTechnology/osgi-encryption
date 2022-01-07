@@ -30,15 +30,6 @@
             <scope>test</scope>
         </dependency>
 
-        <dependency>
-            <groupId>hu.blackbelt</groupId>
-            <artifactId>osgi-encryption-karaf-feature</artifactId>
-            <version>${project.version}</version>
-            <classifier>features</classifier>
-            <type>xml</type>
-            <scope>test</scope>
-        </dependency>
-
         <!-- Dependencies for pax exam karaf container -->
         <dependency>
             <groupId>org.ops4j.pax.exam</groupId>
@@ -114,6 +105,15 @@
             <artifactId>osgi-encryption-services</artifactId>
             <version>${project.version}</version>
         </dependency>
+
+        <dependency>
+            <groupId>hu.blackbelt</groupId>
+            <artifactId>osgi-encryption-karaf-feature</artifactId>
+            <version>${project.version}</version>
+            <classifier>features</classifier>
+            <type>xml</type>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -129,7 +129,6 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
             </plugin>
-
             <!-- Needed if you use versionAsInProject() -->
             <plugin>
                 <groupId>org.apache.servicemix.tooling</groupId>
@@ -144,6 +143,7 @@
                     </execution>
                 </executions>
             </plugin>
+
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
@@ -162,5 +162,4 @@
             </plugin>
         </plugins>
     </build>
-
 </project>
