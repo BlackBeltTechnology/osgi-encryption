@@ -1,19 +1,31 @@
-name: java CI with maven
+name: Build project
 
 on:
   push:
     branches: [ develop ]
   pull_request:
-    branches: [ develop ]
-
-  workflow_dispatch:
+    branches: [ develop, master, increment/*, release/* ]
 
 jobs:
   build:
+    name: Build, test and deploy artifacts
     runs-on: judong
     timeout-minutes: 30
+    env:
+      SIGN_KEY_ID: ${{ secrets.GPG_KEYNAME }}
+      SIGN_KEY_PASS: ${{ secrets.GPG_PASSPHRASE }}
+      SIGN_KEY: ${{ secrets.GPG_SECRET_KEYS }}
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+
     steps:
-      - uses: actions/checkout@v2
+      - name: Dump GitHub context
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+        run: echo "$GITHUB_CONTEXT"
+
+      - name: Checkout repository
+        uses: actions/checkout@v2
         with:
           fetch-depth: 2
 
@@ -21,35 +33,49 @@ jobs:
         id: context
         uses: zero88/gh-project-context@v1.1
 
-      - name: Import GPG key
-        id: import_gpg
-        uses: crazy-max/ghaction-import-gpg@v4
-        with:
-          gpg_private_key: ${{ secrets.GPG_SECRET_KEYS }}
-          passphrase: ${{ secrets.GPG_PASSPHRASE }}
+      - name: Print git references
+        run: |-
+          echo "Ref: ${{ github.ref }}"
+          echo "Head ref: ${{ github.head_ref }}"
+          echo "Base ref: ${{ github.base_ref }}"
+
+      #      - name: Import GPG key
+      #        id: import_gpg
+      #        uses: crazy-max/ghaction-import-gpg@v4
+      #        with:
+      #          gpg_private_key: ${{ secrets.GPG_SECRET_KEYS }}
+      #          passphrase: ${{ secrets.GPG_PASSPHRASE }}
 
       - name: Set up JDK 11
         uses: actions/setup-java@v2
         with:
           java-version: '11'
           distribution: 'zulu'
-          gpg-private-key: ${{ secrets.GPG_SECRET_KEYS }}
-          gpg-passphrase: ${{ secrets.GPG_PASSPHRASE }}
+      #          gpg-private-key: ${{ secrets.GPG_SECRET_KEYS }}
+      #          gpg-passphrase: ${{ secrets.GPG_PASSPHRASE }}
+
+      - name: Get the current PR number
+        uses: jwalton/gh-find-current-pr@v1
+        id: current-pr
+        with:
+          state: open
 
       - name: Calculate version number
         id: version
         run: |-
-          TAG_NAME=$(echo "${{ steps.context.outputs.branch }}" | cut -d ' ' -f2 | tr '#\/\.-' '_')
-          BASE_VERSION=$(./mvnw org.apache.maven.plugins:maven-help-plugin:3.2.0:evaluate -Dtycho.mode=maven -DskipModules=true -Dexpression=project.version -q -DforceStdout | cut -d'-' -f 1)
-          VERSION_NUMBER=${BASE_VERSION}.$(date +%Y%m%d_%H%M%S)_${{ steps.context.outputs.shortCommitId }}_${TAG_NAME//[(\)]}
-          echo "Base version from POM: $BASE_VERSION"
+          POM_VERSION=$(./mvnw org.apache.maven.plugins:maven-help-plugin:3.2.0:evaluate -Dtycho.mode=maven -DskipModules=true -Dexpression=project.version -q -DforceStdout)
+          if [[ "${{ github.base_ref }}" == "master" ]]; then
+            BASE_VERSION=${POM_VERSION}
+            VERSION_NUMBER=${BASE_VERSION}            
+          else
+            BASE_VERSION=$(echo "${POM_VERSION}" | cut -d'-' -f 1)
+            TAG_NAME=$(echo "${{ steps.context.outputs.branch }}" | cut -d ' ' -f2 | tr '#\/\.-' '_')
+            VERSION_NUMBER=${BASE_VERSION}.$(date +%Y%m%d_%H%M%S)_${{ steps.context.outputs.shortCommitId }}_${TAG_NAME//[(\)]}
+          fi
+          echo "Version from POM: ${POM_VERSION}"
+          echo "Base version from POM: ${BASE_VERSION}"
           echo "Building version: ${VERSION_NUMBER}"
           echo "::set-output name=version::${VERSION_NUMBER}"
-      - name: List GPG keys
-        run: gpg --list-keys
-
-      - name: Grep config
-        run: gpg --version
 
       - name: Remove settings.xml
         run: rm $HOME/.m2/settings.xml || true
@@ -78,65 +104,94 @@ jobs:
                     "url": "https://nexus.judo.technology/repository/maven-judong/"
                  }
             ]
-      - name: Print settings.xml
-        run: cat $HOME/.m2/settings.xml
 
-      - name: List GPG keys
-        run: gpg --list-keys
-
-      #      - name: Cache Maven packages
-      #        uses: actions/cache@v2
-      #        with:
-      #          path: ~/.m2
-      #          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-      #          restore-keys: ${{ runner.os }}-m2-
-
-      #      - name: Set project version
-      #        run: |-
-      #          ./mvnw -B -Dstyle.color=always \
-      #          -DnewVersion=${{ steps.version.outputs.version }} \
-      #          -DgenerateBackupPoms=false \
-      #          -Dtycho.mode=maven \
-      #          versions:set
-      #
-      #      - name: Update target definition
-      #        run: |-
-      #          ./mvnw -B -Dstyle.color=always \
-      #          -Dtycho.mode=maven  \
-      #          -P update-target-versions \
-      #          -f ./targetdefinition/pom.xml \
-      #          validate
-      #
-      #      - name: Update category
-      #        run: |-
-      #         ./mvnw -B -Dstyle.color=always \
-      #          -Dtycho.mode=maven \
-      #          -P update-category-versions \
-      #          -f ./site/pom.xml \
-      #          validate
-      #
-      #      - name: Set tycho version
-      #        run: |-
-      #          ./mvnw -B -Dstyle.color=always \
-      #          -Dtycho.mode=maven  \
-      #          -P update-category-versions \
-      #          tycho-versions:update-eclipse-metadata
-      #
-      - name: Build with Maven
+      # Phase 1 - Build and deploy to judong nexus
+      - name: Build with Maven (build, test)
         run: |-
           ./mvnw -B -Dstyle.color=always \
           -Drevision=${{ steps.version.outputs.version }} \
-          -Psign-artifacts,release-judong \
+          -Psign-artifacts \
+          -Prelease-judong \
           deploy
-      #      - name: Release P2
-      #        run: |-
-      #          ./mvnw -B -Dstyle.color=always \
-      #          -Dtycho.mode=maven \
-      #          -Prelease-dummy,release-p2-judong \
-      #          -DdeployOnly \
-      #          -DskipTests=true \
-      #          -DskipModules=true \
-      #          deploy
+
+      # For maven central repository release
+      - name: Deploy with Maven (central)
+        if: ${{ always() && contains(github.head_ref, 'release') && job.status == 'success' }}
+        run: |-
+          ./mvnw -B -Dstyle.color=always \
+          -Drevision=${{ steps.version.outputs.version }} \
+          DdeployOnly \
+          -P"release-central,sign-artifacts,-verify-feature" \
+          -Dmaven.test.skip=true \
+          deploy
+
+      - name: Create version tag
+        uses: actions/github-script@v5
+        with:
+          github-token: ${{ secrets.OSS_PAT }}
+          script: |
+            github.rest.git.createRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: 'refs/tags/v${{ steps.version.outputs.version }}',
+              sha: context.sha
+            })
+
+      - name: Tag to trigger PR merge on increment / release branch
+        if: |-
+          ${{ always() && 
+          (contains(github.head_ref, 'increment') || contains(github.head_ref, 'release')) && 
+          job.status == 'success' }}
+        uses: actions/github-script@v5
+        with:
+          github-token: ${{ secrets.OSS_PAT }}
+          script: |
+            github.rest.git.createRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: 'refs/tags/merge-pr/${{ steps.current-pr.outputs.pr }}',
+              sha: context.sha
+            })
+
+      - name: Tag to trigger release on master / develop branch
+        if: |-
+          ${{ always() && 
+          (contains(github.head_ref, 'develop') || contains(github.ref, 'develop') || 
+            contains(github.head_ref, 'master') || contains(github.ref, 'master')) && 
+          job.status == 'success' }}
+        uses: actions/github-script@v5
+        with:
+          github-token: ${{ secrets.OSS_PAT }}
+          script: |
+            github.rest.git.createRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: 'refs/tags/create-release/${{ steps.version.outputs.version }}',
+              sha: context.sha
+            })
+
+      - name: Create message
+        id: message
+        if: ${{ always() }}
+        run: |-
+          if [ "${{ job.status }}" == "success" ]; then
+            message=":check_mark_button: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            message="${message} Version: ${{ steps.version.outputs.version }}"
+          fi
+          if [ "${{ job.status }}" == "failure" ]; then
+            message=":cross_mark: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"    
+          fi
+          if [ "${{ job.status }}" == "canceled" ]; then
+            message=":cross_mark: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"    
+          fi
+          message="${message} Commit: ${{ steps.context.outputs.commitMsg }}"
+          message="${message} User: ${{ github.actor }}"
+          echo "::set-output name=message::${message}"
+
+      - name: Write message to file
+        run: |-
+          echo "${{ steps.message.outputs.message }}"
+          echo "${{ steps.message.outputs.message }}" > build.msg
 
       - name: Create success message
         if: ${{ !failure() && !cancelled() }}
@@ -154,11 +209,6 @@ jobs:
         run: |-
           echo ":warning: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" > build.msg
           echo "Commit: ${{ steps.context.outputs.commitMsg }}" >> build.msg
-      - name: Tag commit
-        uses: tvdias/github-tagger@v0.0.1
-        with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-          tag: v${{ steps.version.outputs.version }}
 
       - name: Send message to skype
         uses: Eloco/docker-action-send-skype@v2
