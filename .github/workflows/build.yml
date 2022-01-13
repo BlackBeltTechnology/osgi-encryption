@@ -77,12 +77,6 @@ jobs:
           echo "Building version: ${VERSION_NUMBER}"
           echo "::set-output name=version::${VERSION_NUMBER}"
 
-      #      - name: List GPG keys
-      #        run: gpg --list-keys
-
-      #      - name: Grep config
-      #        run: gpg --version
-
       - name: Remove settings.xml
         run: rm $HOME/.m2/settings.xml || true
 
@@ -111,72 +105,14 @@ jobs:
                  }
             ]
 
-        #      - name: Print settings.xml
-        #        run: cat $HOME/.m2/settings.xml
-        #
-        #      - name: List GPG keys
-        #        run: gpg --list-keys
-
-        #      - name: Cache Maven packages
-        #        uses: actions/cache@v2
-        #        with:
-        #          path: ~/.m2
-        #          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-        #          restore-keys: ${{ runner.os }}-m2-
-
-        # Eclipse specific build block. BEGIN
-        # It manages tycho versions in P2 world.
-        # Different eclipse project target / category can be in different places
-        #      - name: Set project version
-        #        run: |-
-        #          ./mvnw -B -Dstyle.color=always \
-        #          -DnewVersion=${{ steps.version.outputs.version }} \
-        #          -DgenerateBackupPoms=false \
-        #          -Dtycho.mode=maven \
-        #          versions:set
-        #
-        #      - name: Update target definition
-        #        run: |-
-        #          ./mvnw -B -Dstyle.color=always \
-        #          -Dtycho.mode=maven  \
-        #          -P update-target-versions \
-        #          -f ./targetdefinition/pom.xml \
-        #          validate
-        #
-        #      - name: Update category
-        #        run: |-
-        #         ./mvnw -B -Dstyle.color=always \
-        #          -Dtycho.mode=maven \
-        #          -P update-category-versions \
-        #          -f ./site/pom.xml \
-        #          validate
-        #
-        #      - name: Set tycho version
-        #        run: |-
-        #          ./mvnw -B -Dstyle.color=always \
-        #          -Dtycho.mode=maven  \
-        #          -P update-category-versions \
-        #          tycho-versions:update-eclipse-metadata
-        # Eclipse specific build block. END
-
-      # Phase 1 - Build and deploy to local stage (/target/stage
+      # Phase 1 - Build and deploy to judong nexus
       - name: Build with Maven (build, test)
         run: |-
           ./mvnw -B -Dstyle.color=always \
           -Drevision=${{ steps.version.outputs.version }} \
           -Psign-artifacts \
-          -Prelease-local-stage \
-          install
-
-      # Phase 2 - Deploy to judo-ng nexus
-      - name: Deploy with Maven (judo-ng)
-        run: |-
-          ./mvnw -B -Dstyle.color=always \
-          -Drevision=${{ steps.version.outputs.version }} \
-          -DdeployOnly \
           -Prelease-judong \
           deploy
-
 
       # For maven central repository release
       - name: Deploy with Maven (central)
@@ -185,25 +121,9 @@ jobs:
           ./mvnw -B -Dstyle.color=always \
           -Drevision=${{ steps.version.outputs.version }} \
           DdeployOnly \
-          -Prelease-central \
+          -P"release-central,sign-artifacts,-verify-feature" \
+          -Dmaven.test.skip=true \
           deploy
-
-      # Eclipse specific build block. BEGIN
-      # Release artifact as P2 repository
-      - name: Release P2
-        if: ${{ always() && contains(github.head_ref, 'release') && job.status == 'success' }}
-        run: |-
-          ./mvnw -B -Dstyle.color=always \
-          -Drevision=${{ steps.version.outputs.version }} \
-          -Dtycho.mode=maven \
-          -DskipModules=true \
-          -Prelease-p2-judong \
-          wagon:upload@upload-repository
-
-
-      - name: Restore changes in pom.xml files (ie. ser version)
-        run: git diff --name-only -- '*/pom.xml' | sed 's, ,\\&,g' | xargs git checkout --
-      # Eclipse specific build block. END
 
       - name: Create version tag
         uses: actions/github-script@v5
@@ -289,12 +209,6 @@ jobs:
         run: |-
           echo ":warning: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" > build.msg
           echo "Commit: ${{ steps.context.outputs.commitMsg }}" >> build.msg
-
-#      - name: Tag commit
-#        uses: tvdias/github-tagger@v0.0.1
-#        with:
-#          repo-token: ${{ secrets.GITHUB_TOKEN }}
-#          tag: v${{ steps.version.outputs.version }}
 
       - name: Send message to skype
         uses: Eloco/docker-action-send-skype@v2
