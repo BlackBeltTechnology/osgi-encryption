@@ -39,20 +39,11 @@ jobs:
           echo "Head ref: ${{ github.head_ref }}"
           echo "Base ref: ${{ github.base_ref }}"
 
-      #      - name: Import GPG key
-      #        id: import_gpg
-      #        uses: crazy-max/ghaction-import-gpg@v4
-      #        with:
-      #          gpg_private_key: ${{ secrets.GPG_SECRET_KEYS }}
-      #          passphrase: ${{ secrets.GPG_PASSPHRASE }}
-
       - name: Set up JDK 11
         uses: actions/setup-java@v2
         with:
           java-version: '11'
           distribution: 'zulu'
-      #          gpg-private-key: ${{ secrets.GPG_SECRET_KEYS }}
-      #          gpg-passphrase: ${{ secrets.GPG_PASSPHRASE }}
 
       - name: Get the current PR number
         uses: jwalton/gh-find-current-pr@v1
