@@ -184,23 +184,6 @@ jobs:
           echo "${{ steps.message.outputs.message }}"
           echo "${{ steps.message.outputs.message }}" > build.msg
 
-      - name: Create success message
-        if: ${{ !failure() && !cancelled() }}
-        run: |-
-          echo ":check_mark_button: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" > build.msg
-          echo "Version: ${{ steps.version.outputs.version }}" >> build.msg
-          echo "Commit: ${{ steps.context.outputs.commitMsg }}" >> build.msg
-      - name: Create faliure message
-        if: ${{ failure() }}
-        run: |-
-          echo ":cross_mark: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" > build.msg
-          echo "Commit: ${{ steps.context.outputs.commitMsg }}" >> build.msg
-      - name: Create canceled message
-        if: ${{ cancelled() }}
-        run: |-
-          echo ":warning: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" > build.msg
-          echo "Commit: ${{ steps.context.outputs.commitMsg }}" >> build.msg
-
       - name: Send message to skype
         uses: Eloco/docker-action-send-skype@v2
         if: always()
