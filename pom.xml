@@ -20,7 +20,7 @@
         <src.dir>src/main</src.dir>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
-        <karaf-version>4.3.4</karaf-version>
+        <karaf-version>4.4.3</karaf-version>
         <pax-exam-version>4.13.5</pax-exam-version>
         <log4j.configuration>log4j.properties</log4j.configuration>
         <asciidoctorj-version>2.5.2</asciidoctorj-version>
