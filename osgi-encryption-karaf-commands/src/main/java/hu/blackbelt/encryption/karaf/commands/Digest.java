@@ -9,9 +9,9 @@ package hu.blackbelt.encryption.karaf.commands;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -31,7 +31,7 @@ import org.jasypt.digest.config.EnvironmentStringDigesterConfig;
 @Command(scope = "jasypt", name = "digest", description = "Get digest of a String.")
 @Service
 public class Digest implements Action {
-    
+
     @Argument(index = 0, name = "text", description = "Text to encrypt", required = true, multiValued = false)
     private String text;
 
@@ -44,13 +44,13 @@ public class Digest implements Action {
 
     @Option(name = "--digest", description = "Digest value for validation", required = false, multiValued = false)
     private String digest;
-    
+
     @Option(name = "--saltSize", description = "Salt size", required = false, multiValued = false)
     private Integer saltSize;
-    
+
     @Option(name = "--iterations", description = "Iterations", required = false, multiValued = false)
     private Integer iterations;
-    
+
     @Option(name = "--outputType", description = "Output type", required = false, multiValued = false)
     @Completion(OutputTypeCompleter.class)
     private String outputType = OutputTypeCompleter.HEXADECIMAL;
