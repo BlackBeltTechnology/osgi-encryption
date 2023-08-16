@@ -20,14 +20,14 @@
         <src.dir>src/main</src.dir>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
-        <karaf-version>4.3.4</karaf-version>
+        <karaf-version>4.4.3</karaf-version>
         <pax-exam-version>4.13.5</pax-exam-version>
         <log4j.configuration>log4j.properties</log4j.configuration>
         <asciidoctorj-version>2.5.2</asciidoctorj-version>
         <jruby-version>9.2.19.0</jruby-version>
         <jasypt-version>1.9.2</jasypt-version>
 
-        <surefire-version>3.0.0-M5</surefire-version>
+        <surefire-version>3.0.0</surefire-version>
         <!--suppress UnresolvedMavenProperty -->
         <logback-test-config>${maven.multiModuleProjectDirectory}/logback-test.xml</logback-test-config>
 
@@ -350,7 +350,7 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>27.1-jre</version>
+            <version>31.0-jre</version>
         </dependency>
 
         <dependency>
