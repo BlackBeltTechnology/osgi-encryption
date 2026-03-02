@@ -36,7 +36,7 @@ gitGraph
     commit id: "dev-2"
     checkout release/1.0
     commit id: "bugfix"
-    checkout main
+    checkout master
     merge release/1.0 id: "v1.0" tag: "v1.0"
     checkout develop
     merge release/1.0 id: "backmerge"
