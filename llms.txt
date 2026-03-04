@@ -1,0 +1,41 @@
+# OSGi Encryption
+
+> Wraps the Jasypt encryption library as OSGi Declarative Services components, providing encrypt/decrypt/digest operations as registered OSGi services with ConfigAdmin integration, JMX monitoring, and Apache Karaf shell commands.
+
+Key facts:
+- Java 11 (source/target), build requires Java 21
+- Maven 3.9.4+ multi-module project, 6 modules
+- OSGi Core 6.0.0 with Declarative Services 1.3 and ConfigAdmin
+- Jasypt 1.9.2 for PBE encryption and message digesting
+- Apache Karaf 4.4.7 runtime with feature descriptor for one-command installation
+- Pax Exam 4.13.5 integration tests booting a full Karaf container
+- License: Apache 2.0
+
+## Docs
+
+- [README.md](README.md): Quick start guide and Karaf installation instructions
+- [AGENTS.md](AGENTS.md): Project architecture, build commands, module descriptions, and development guide
+- [CONTRIBUTING.md](CONTRIBUTING.md): Development environment setup, code conventions, PR submission
+- [.github/CIFLOW.md](.github/CIFLOW.md): Branching strategy, version numbering, CI/CD pipeline details
+
+## Modules — Core
+
+- [osgi-encryption-services/pom.xml](osgi-encryption-services/pom.xml): Core encryption/decryption/digest service implementations as OSGi DS components with Jasypt backend, password file watching, and BouncyCastle provider registration
+- [osgi-encryption-metrics/pom.xml](osgi-encryption-metrics/pom.xml): JMX MBean provider that tracks encryption operation statistics and exposes them for monitoring
+
+## Modules — Karaf Integration
+
+- [osgi-encryption-karaf-commands/pom.xml](osgi-encryption-karaf-commands/pom.xml): Apache Karaf shell commands (`jasypt:encrypt`, `jasypt:decrypt`, `jasypt:digest`, `jasypt:info`) with tab completers
+- [osgi-encryption-karaf-features/src/main/feature/feature.xml](osgi-encryption-karaf-features/src/main/feature/feature.xml): Karaf feature XML descriptor that installs SCR, Jasypt dependencies, and runtime bundles
+
+## Modules — Testing
+
+- [osgi-encryption-test/pom.xml](osgi-encryption-test/pom.xml): Sample DS component demonstrating encrypted configuration usage
+- [osgi-encryption-itest/pom.xml](osgi-encryption-itest/pom.xml): Pax Exam integration tests that boot a Karaf container with the encryption feature installed
+
+## Optional
+
+- [.github/workflows/build.yml](.github/workflows/build.yml): Main CI pipeline for build, test, deploy, tag, and release
+- [.github/workflows/release.yml](.github/workflows/release.yml): Manual release workflow for creating version PRs
+- [LICENSE.txt](LICENSE.txt): Apache 2.0 license text
+- [logback-test.xml](logback-test.xml): Shared Logback configuration for test runs
